@@ -27,8 +27,8 @@ spec:
           mountPath: /etc/condor/passwords-orig.d/
       volumes:
       - name: pool-passwd
-        configMap:
-          name: pool-passwd
+        secret:
+          secretName: pool-passwd
 ---
 apiVersion: v1
 kind: Service

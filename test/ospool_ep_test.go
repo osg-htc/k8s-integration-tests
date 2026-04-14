@@ -10,7 +10,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 
-	//"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 )
 
@@ -51,14 +50,21 @@ func TestOSPoolEP(t *testing.T) {
 
 	options := k8s.NewKubectlOptions("", "", namespace)
 
-	// defer deleting the k8s resources created for the test
-	defer k8s.DeleteNamespace(t, options, namespace)
-	defer k8s.KubectlDeleteFromKustomize(t, options, resourcePath)
-
 	// create k8s namespaces for the test
 	k8s.CreateNamespace(t, options, namespace)
+	// create the required credentials for cross-container communication in the test
+	tokenData := generatePoolPasswordAndIDToken(t, options, IDTokenOptions{
+		trustDomain: "test-cm",
+		identity:    "condor@test-cm",
+		secretName:  "pool-token",
+	})
 	// create k8s resources for the test
 	k8s.KubectlApplyFromKustomize(t, options, resourcePath)
+
+	// defer deleting the k8s resources created for the test
+	defer k8s.DeleteNamespace(t, options, namespace)
+	defer deletePoolPasswordAndIDToken(t, options, tokenData)
+	defer k8s.KubectlDeleteFromKustomize(t, options, resourcePath)
 
 	t.Run("Confirm deployments become ready.", func(t *testing.T) {
 		subtestDeploymentsReady(t, options)

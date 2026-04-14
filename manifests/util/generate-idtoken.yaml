@@ -1,0 +1,32 @@
+# Utility manifests for
+# - Creating a POOL password stored as a Secret
+# - Spinning up a utility htcondor Pod that can be used to generate an IDToken signed by
+#   that secret
+apiVersion: v1
+kind: Pod
+metadata:
+  name: idtoken-generator
+  labels:
+    app: idtoken-generator
+spec:
+  containers:
+  - name: idtoken-generator
+    image: htcondor/base
+    env:
+    - name: _CONDOR_TRUST_DOMAIN
+      value: {{ .trustDomain }}
+    volumeMounts:
+    - name: pool-passwd
+      mountPath: /etc/condor/passwords-orig.d/
+  volumes:
+  - name: pool-passwd
+    secret:
+      secretName: pool-passwd
+---
+# Pool Password for the test pool
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pool-passwd
+stringData:
+  POOL: {{ .poolPassword }}
