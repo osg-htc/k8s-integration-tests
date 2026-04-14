@@ -3,11 +3,9 @@ on:
   workflow_dispatch: 
 jobs:
   test-ospool-ep:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     name: Run OSPool EP tests
     steps:
-    - name: Disable AppArmor on the GitHub runner
-      uses: cisagov/action-disable-apparmor@v1.0.0
     - name: checkout
       uses: actions/checkout@v5
     - name: Start minikube
