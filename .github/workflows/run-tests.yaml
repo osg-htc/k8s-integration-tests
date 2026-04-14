@@ -1,0 +1,18 @@
+name: 
+on:
+  workflow_dispatch: 
+jobs:
+  test-ospool-ep:
+    runs-on: ubuntu-latest
+    name: Run OSPool EP tests
+    steps:
+    - name: checkout
+      uses: actions/checkout@v5
+    - name: Start minikube
+      uses: medyagh/setup-minikube@latest
+    - name: Install Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: '1.26'
+    - name: 'test'
+      run: go test ./test -run TestOSPoolEP
