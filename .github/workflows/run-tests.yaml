@@ -15,4 +15,4 @@ jobs:
       with:
         go-version: '1.26'
     - name: 'test'
-      run: go test ./test -run TestOSPoolEP
+      run: go test ./test -v -run TestOSPoolEP
