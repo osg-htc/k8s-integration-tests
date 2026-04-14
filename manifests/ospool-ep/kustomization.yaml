@@ -1,0 +1,4 @@
+resources:
+   - central-manager.yaml
+   - ospool-ep.yaml
+   - pool-password.yaml

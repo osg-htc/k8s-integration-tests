@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ospool-ep
+    name: ospool-ep
+  name: ospool-ep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ospool-ep
+  template:
+    metadata:
+      labels:
+        app: ospool-ep
+    spec:
+      containers:
+      - env:
+        - name: GLIDEIN_ResourceName
+          value: CHTC-DEV-EP-mwestphall
+        - name: GLIDEIN_Site
+          value: CHTC
+        - name: TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: token
+              name: pool-token
+        - name: CONDOR_HOST
+          value: test-cm
+          #value: test-cm.test-ospool-ep.svc.cluster.local
+        - name: _CONDOR_ALL_DEBUG
+          value: "D_SECURITY:2"
+        image: hub.opensciencegrid.org/osg-htc/ospool-ep:25-release
+        imagePullPolicy: Always
+        name: ospool-ep
+        securityContext:
+          privileged: true
+          runAsGroup: 1000
+          runAsUser: 1000
+        volumeMounts:
+        - mountPath: /pilot
+          name: scratch
+      initContainers:
+      - command:
+        - chown
+        - -R
+        - 1000:1000
+        - /pilot
+        image: hub.opensciencegrid.org/library/alpine:3
+        name: chown-pilot-dir
+        volumeMounts:
+        - mountPath: /pilot
+          name: scratch
+      volumes:
+      - emptyDir: 
+          sizeLimit: 5Gi
+        name: scratch
+      - hostPath:
+          path: /dev/fuse
+        name: dev-fuse
