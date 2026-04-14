@@ -24,9 +24,9 @@ func waitUntilDeploymentsReady(t *testing.T, options *k8s.KubectlOptions, deploy
 
 // Try exec-ing a command in a pod until that command returns a zero exit code.
 // Used to poll for "readiness" of a service inside a container
-func waitUntilPodExecSucceeds(t *testing.T, options *k8s.KubectlOptions, podName string, command string, retries int, sleep time.Duration) string {
+func waitUntilPodExecSucceeds(t *testing.T, options *k8s.KubectlOptions, podName string, containerName string, command string, retries int, sleep time.Duration) string {
 	for range retries {
-		res, err := k8s.ExecPodE(t, options, podName, "", "sh", "-c", command)
+		res, err := k8s.ExecPodE(t, options, podName, containerName, "sh", "-c", command)
 		if err == nil {
 			return res
 		}

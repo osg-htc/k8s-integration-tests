@@ -20,13 +20,23 @@ func subtestDeploymentsReady(t *testing.T, options *k8s.KubectlOptions) {
 	waitUntilDeploymentsReady(t, options, deployments, 12, 10*time.Second)
 }
 
+// Check that Apptainer can run inside the EP container
+func subtestHasSingularity(t *testing.T, options *k8s.KubectlOptions) {
+	epPod := getPodNameByLabel(t, options, "app=ospool-ep")
+
+	cmd := "condor_config_val -root-config osgvo-pilot-*/condor_config.pilot HAS_SINGULARITY"
+	output := waitUntilPodExecSucceeds(t, options, epPod, "ospool-ep", cmd, 12, 10*time.Second)
+	require.Equal(t, "True", output)
+
+}
+
 // Check that condor_status run against the CM lists the EP
 func subtestCondorStatus(t *testing.T, options *k8s.KubectlOptions) {
 	cmPod := getPodNameByLabel(t, options, "app=test-cm")
 	epPod := getPodNameByLabel(t, options, "app=ospool-ep")
 	// Check that condor_status filtered on the EP's name returns a non-empty string
 	cmd := fmt.Sprintf("[ -n \"$(condor_status -const 'regexp(\"%v\",Machine)')\" ]", epPod)
-	waitUntilPodExecSucceeds(t, options, cmPod, cmd, 12, 10*time.Second)
+	waitUntilPodExecSucceeds(t, options, cmPod, "", cmd, 12, 10*time.Second)
 }
 
 // Entrypoint test: Creates a fresh namespace, applies a kustomization
@@ -50,11 +60,15 @@ func TestOSPoolEP(t *testing.T) {
 	// create k8s resources for the test
 	k8s.KubectlApplyFromKustomize(t, options, resourcePath)
 
-	// Wait for each expected deployment to enter the "ready" state
-	// before running tests
-	t.Run("Confirm deployments become ready.", func(t *testing.T) { subtestDeploymentsReady(t, options) })
+	t.Run("Confirm deployments become ready.", func(t *testing.T) {
+		subtestDeploymentsReady(t, options)
+	})
 
-	// Very basic proof of concept: confirm that `condor_status` on the CM contains the
-	// AP's pod name
-	t.Run("Confirm condor_status lists the EP", func(t *testing.T) { subtestCondorStatus(t, options) })
+	t.Run("Confirm EP container has singularity.", func(t *testing.T) {
+		subtestHasSingularity(t, options)
+	})
+
+	t.Run("Confirm condor_status lists the EP.", func(t *testing.T) {
+		subtestCondorStatus(t, options)
+	})
 }
