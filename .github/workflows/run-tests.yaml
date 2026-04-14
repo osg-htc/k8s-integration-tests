@@ -3,7 +3,7 @@ on:
   workflow_dispatch: 
 jobs:
   test-ospool-ep:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     name: Run OSPool EP tests
     steps:
     - name: checkout
