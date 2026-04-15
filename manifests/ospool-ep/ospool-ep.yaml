@@ -28,9 +28,18 @@ spec:
               name: pool-token
         - name: CONDOR_HOST
           value: test-cm
-          #value: test-cm.test-ospool-ep.svc.cluster.local
-        - name: _CONDOR_ALL_DEBUG
-          value: "D_SECURITY:2"
+        - name: CVMFSEXEC_REPOS
+          value: 'oasis.opensciencegrid.org singularity.opensciencegrid.org'
+        - name: CVMFSEXEC_DEBUG
+          value: 'True'
+        - name: GLIDEIN_Start_Extra
+          value: 'True'
+        - name: OSG_SQUID_LOCATION
+          value: 'None'
+        - name: OSG_SQUID_LOCATION
+          value: 'None'
+        - name: ENABLE_REMOTE_SYSLOG
+          value: 'False'
         image: hub.opensciencegrid.org/osg-htc/ospool-ep:25-release
         imagePullPolicy: Always
         name: ospool-ep

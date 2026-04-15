@@ -1,6 +1,7 @@
 package test
 
 import (
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -10,37 +11,56 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Wait for each listed deployment to enter the "Ready" state.
+// Wrapper for common args passed to every test function
+type TestHandle struct {
+	*testing.T
+	options *k8s.KubectlOptions
+}
+
+// Wrapper for the common (retry count, retry delay) result polling construct
+type Retry struct {
+	retries int
+	sleep   time.Duration
+}
+
+// truthy returns whether a string evaluates to "True", "true", "TRUE", etc.
+func truthy(s string) bool {
+	return strings.ToLower(strings.TrimSpace(s)) == "true"
+}
+
+// waitUntilDeploymentsReady waits for each listed deployment to enter the "Ready" state.
 // Fail the test if one or more deployments are not ready within the timeout.
-func waitUntilDeploymentsReady(t *testing.T, options *k8s.KubectlOptions, deployments []string, retries int, sleep time.Duration) {
+func (th *TestHandle) waitUntilDeploymentsReady(deployments []string, retries Retry) {
 	var wg sync.WaitGroup
 	for _, deploy := range deployments {
 		wg.Go(func() {
-			k8s.WaitUntilDeploymentAvailable(t, options, deploy, retries, sleep)
+			k8s.WaitUntilDeploymentAvailable(th.T, th.options, deploy, retries.retries, retries.sleep)
 		})
 	}
 	wg.Wait()
 }
 
-// Try exec-ing a command in a pod until that command returns a zero exit code.
-// Used to poll for "readiness" of a service inside a container
-func waitUntilPodExecSucceeds(t *testing.T, options *k8s.KubectlOptions, podName string, containerName string, command string, retries int, sleep time.Duration) string {
-	for range retries {
-		res, err := k8s.ExecPodE(t, options, podName, containerName, "sh", "-c", command)
-		if err == nil {
+type EvalOutput func(string) bool
+
+// waitUntilPodExecSucceeds tries exec-ing a command in a pod until that command both returns a zero exit code and passes the provided
+// evaluation expression. Used to poll for "readiness" of a service inside a container
+func (th *TestHandle) waitUntilPodExecSucceeds(podName string, containerName string, command string, retries Retry, evaluator EvalOutput) string {
+	for range retries.retries {
+		res, err := k8s.ExecPodE(th.T, th.options, podName, containerName, "sh", "-c", command)
+		if err == nil && evaluator(res) {
 			return res
 		}
-		t.Logf("Exec '%v' in pod %v failed. Retrying in %v.", command, podName, sleep)
-		time.Sleep(sleep)
+		th.T.Logf("Exec '%v' in pod %v failed. Retrying in %v.", command, podName, retries.sleep)
+		time.Sleep(retries.sleep)
 	}
-	t.Fatalf("Exec '%v' in pod %v did not succeed within %v retries", command, podName, retries)
+	th.T.Fatalf("Exec '%v' in pod %v did not succeed within %v retries", command, podName, retries)
 	return ""
 }
 
-// Get the name of a pod matching a label selector. Assumes that the label
+// getPodNameByLabel gets the name of a pod matching a label selector. Assumes that the label
 // uniquely identifies a pod
-func getPodNameByLabel(t *testing.T, options *k8s.KubectlOptions, label string) string {
-	pods := k8s.ListPods(t, options, v1.ListOptions{LabelSelector: label})
-	require.Len(t, pods, 1)
+func (th *TestHandle) getPodNameByLabel(label string) string {
+	pods := k8s.ListPods(th.T, th.options, v1.ListOptions{LabelSelector: label})
+	require.Len(th.T, pods, 1)
 	return pods[0].Name
 }

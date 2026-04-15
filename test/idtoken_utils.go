@@ -44,11 +44,11 @@ func applyTemplate(t *testing.T, templatePath string, data any) string {
 // generatePoolPasswordAndIDToken creates a random pool password and uses it to generate
 // a signed HTCondor IDToken via a temporary pod. Applies the resulting password and token
 // as Kubernetes resources and returns their rendered manifests for later cleanup.
-func generatePoolPasswordAndIDToken(t *testing.T, options *k8s.KubectlOptions, tokenOptions IDTokenOptions) IDTokenData {
+func (th *TestHandle) generatePoolPasswordAndIDToken(tokenOptions IDTokenOptions) IDTokenData {
 	// Generate a random POOL password
 	passwd := randomPoolPassword(16)
 	// Create a new K8s template based on the selected tokenOptions and Pool password
-	passwdManifest := applyTemplate(t, "../manifests/util/generate-idtoken.yaml", map[string]string{
+	passwdManifest := applyTemplate(th.T, "../manifests/util/generate-idtoken.yaml", map[string]string{
 		"trustDomain":  tokenOptions.trustDomain,
 		"poolPassword": passwd,
 	})
@@ -56,26 +56,26 @@ func generatePoolPasswordAndIDToken(t *testing.T, options *k8s.KubectlOptions, t
 	podname := "idtoken-generator"
 
 	// Create the POOL password secret and a pod that can be used to generate an IDToken
-	k8s.KubectlApplyFromString(t, options, passwdManifest)
+	k8s.KubectlApplyFromString(th.T, th.options, passwdManifest)
 
 	// Wait for the pod to become active
-	k8s.WaitUntilPodAvailable(t, options, podname, 6, 5*time.Second)
+	k8s.WaitUntilPodAvailable(th.T, th.options, podname, 6, 5*time.Second)
 
 	// Generate an IDToken on the pod using `condor_token_create`
-	token := k8s.ExecPod(t, options, podname, "",
+	token := k8s.ExecPod(th.T, th.options, podname, "",
 		"condor_token_create",
 		"-authz", "READ",
 		"-authz", "ADVERTISE_STARTD",
 		"-authz", "ADVERTISE_MASTER",
 		"-identity", tokenOptions.identity)
 
-	tokenManifest := applyTemplate(t, "../manifests/util/idtoken.yaml", map[string]string{
+	tokenManifest := applyTemplate(th.T, "../manifests/util/idtoken.yaml", map[string]string{
 		"name":  tokenOptions.secretName,
 		"token": token,
 	})
 
-	k8s.KubectlApplyFromString(t, options, tokenManifest)
-	k8s.WaitUntilSecretAvailable(t, options, tokenOptions.secretName, 5, time.Second)
+	k8s.KubectlApplyFromString(th.T, th.options, tokenManifest)
+	k8s.WaitUntilSecretAvailable(th.T, th.options, tokenOptions.secretName, 5, time.Second)
 
 	return IDTokenData{
 		passwdManifest: passwdManifest,
@@ -85,7 +85,7 @@ func generatePoolPasswordAndIDToken(t *testing.T, options *k8s.KubectlOptions, t
 
 // deletePoolPasswordAndIDToken removes the pool password and IDToken Kubernetes resources
 // previously created by generatePoolPasswordAndIDToken.
-func deletePoolPasswordAndIDToken(t *testing.T, options *k8s.KubectlOptions, data IDTokenData) {
-	k8s.KubectlDeleteFromString(t, options, data.passwdManifest)
-	k8s.KubectlDeleteFromString(t, options, data.tokenManifest)
+func (th *TestHandle) deletePoolPasswordAndIDToken(data IDTokenData) {
+	k8s.KubectlDeleteFromString(th.T, th.options, data.passwdManifest)
+	k8s.KubectlDeleteFromString(th.T, th.options, data.tokenManifest)
 }
