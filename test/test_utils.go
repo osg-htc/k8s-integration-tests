@@ -28,6 +28,11 @@ func truthy(s string) bool {
 	return strings.ToLower(strings.TrimSpace(s)) == "true"
 }
 
+// nonEmpty returns whether a string has content
+func nonEmpty(s string) bool {
+	return len(s) > 0
+}
+
 // waitUntilDeploymentsReady waits for each listed deployment to enter the "Ready" state.
 // Fail the test if one or more deployments are not ready within the timeout.
 func (th *TestHandle) waitUntilDeploymentsReady(deployments []string, retries Retry) {

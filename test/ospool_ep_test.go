@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TWO_MINUTES is the default retry configuration for polling tests
 var TWO_MINUTES = Retry{12, 10 * time.Second}
 
 // Check that all deployments in the namespace become "ready" within 2 minutes
@@ -21,26 +23,38 @@ func subtestDeploymentsReady(th TestHandle) {
 	th.waitUntilDeploymentsReady(deployments, TWO_MINUTES)
 }
 
-// Check that the EP advertises that it can run Apptainer
-func subtestHasSingularity(th TestHandle) {
-	cmPod := th.getPodNameByLabel("app=test-cm")
-	epPod := th.getPodNameByLabel("app=ospool-ep")
-	// Check that condor_status filtered on the EP's name returns a non-empty string
-	cmd := fmt.Sprintf(`condor_status -const 'regexp("%v",Machine)' -af HAS_SINGULARITY`, epPod)
-	th.waitUntilPodExecSucceeds(cmPod, "", cmd, TWO_MINUTES, func(res string) bool {
-		return truthy(res)
-	})
-}
-
 // Check that condor_status run against the CM lists the EP
 func subtestCondorStatus(th TestHandle) {
 	cmPod := th.getPodNameByLabel("app=test-cm")
 	epPod := th.getPodNameByLabel("app=ospool-ep")
 	// Check that condor_status filtered on the EP's name returns a non-empty string
 	cmd := fmt.Sprintf(`condor_status -const 'regexp("%v",Machine)'`, epPod)
-	th.waitUntilPodExecSucceeds(cmPod, "", cmd, TWO_MINUTES, func(res string) bool {
-		return len(res) > 0
-	})
+	th.waitUntilPodExecSucceeds(cmPod, "", cmd, TWO_MINUTES, nonEmpty)
+}
+
+// Check that the EP advertises that it can run Apptainer
+func subtestHasSingularity(th TestHandle) {
+	cmPod := th.getPodNameByLabel("app=test-cm")
+	epPod := th.getPodNameByLabel("app=ospool-ep")
+	// Check that condor_status filtered on the EP's name returns a non-empty string
+	cmd := fmt.Sprintf(`condor_status -const 'regexp("%v",Machine)' -af HAS_SINGULARITY`, epPod)
+	th.waitUntilPodExecSucceeds(cmPod, "", cmd, TWO_MINUTES, truthy)
+}
+
+// Check that the EP advertises the two test CVMFS repos
+func subtestHasCVMFS(th TestHandle) {
+	cmPod := th.getPodNameByLabel("app=test-cm")
+	epPod := th.getPodNameByLabel("app=ospool-ep")
+
+	cvmfsAds := []string{"HAS_CVMFS_singularity_opensciencegrid_org", "HAS_CVMFS_oasis_opensciencegrid_org"}
+	var wg sync.WaitGroup
+	for _, ad := range cvmfsAds {
+		cmd := fmt.Sprintf(`condor_status -const 'regexp("%v",Machine)' -af %v`, epPod, ad)
+		wg.Go(func() {
+			th.waitUntilPodExecSucceeds(cmPod, "", cmd, TWO_MINUTES, truthy)
+		})
+	}
+	wg.Wait()
 }
 
 // Entrypoint test: Creates a fresh namespace, applies a kustomization
@@ -85,4 +99,7 @@ func TestOSPoolEP(t *testing.T) {
 		subtestHasSingularity(TestHandle{t, options})
 	})
 
+	t.Run("Confirm EP container advertises CVMFS", func(t *testing.T) {
+		subtestHasCVMFS(TestHandle{t, options})
+	})
 }
