@@ -32,10 +32,6 @@ spec:
           value: "config-osg.opensciencegrid.org,icecube.opensciencegrid.org,oasis.opensciencegrid.org,connect.opensciencegrid.org,singularity.opensciencegrid.org,xenon.opensciencegrid.org,fermilab.opensciencegrid.org,nova.opensciencegrid.org,cms.cern.ch,cms-ib.cern.ch,atlas.cern.ch,sft.cern.ch,software.igwn.org"
         - name: SQUID_URI
           value: "http://frontier-squid:3128"
-        resources:
-           limits:
-             memory: 4Gi
-             cpu: 1
         volumeMounts:
         - mountPath: /cvmfs
           name:  cvmfs-base

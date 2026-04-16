@@ -25,10 +25,6 @@ spec:
         image: opensciencegrid/frontier-squid:fresh
         imagePullPolicy: Always
         #command: ["sh", "-c", "sleep infinity"]
-        resources:
-           limits:
-             memory: 16Gi
-             cpu: 1
         env:
         - name: SQUID_IPRANGE
           value: "0.0.0.0/0"
