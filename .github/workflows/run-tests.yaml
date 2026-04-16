@@ -32,6 +32,6 @@ jobs:
     - name: Setup CVMFS
       run: sudo scripts/setup_cvmfs.sh
     - name: Bind-Mount CVMFS into Minikube
-      run: minikube bind /cvmfs:/cvmfs &
+      run: minikube mount /cvmfs:/cvmfs &
     - name: 'Test OSPool EP with cvmfs bind mount'
       run: go test ./test -v -run TestOSPoolEPCvmfsBindMount
