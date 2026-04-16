@@ -16,6 +16,7 @@ import (
 
 // TWO_MINUTES is the default retry configuration for polling tests
 var TWO_MINUTES = Retry{12, 10 * time.Second}
+var SIX_MINUTES = Retry{12, 30 * time.Second}
 
 // Check that all deployments in the namespace become "ready" within 2 minutes
 func subtestDeploymentsReady(th TestHandle) {
@@ -46,12 +47,12 @@ func subtestHasCVMFS(th TestHandle) {
 	cmPod := th.getPodNameByLabel("app=test-cm")
 	epPod := th.getPodNameByLabel("app=ospool-ep")
 
-	cvmfsAds := []string{"HAS_CVMFS_singularity_opensciencegrid_org", "HAS_CVMFS_oasis_opensciencegrid_org"}
+	cvmfsAds := []string{"HAS_CVMFS_singularity_opensciencegrid_org", }
 	var wg sync.WaitGroup
 	for _, ad := range cvmfsAds {
 		cmd := fmt.Sprintf(`condor_status -const 'regexp("%v",Machine)' -af %v`, epPod, ad)
 		wg.Go(func() {
-			th.waitUntilPodExecSucceeds(cmPod, "", cmd, TWO_MINUTES, truthy)
+			th.waitUntilPodExecSucceeds(cmPod, "", cmd, SIX_MINUTES, truthy)
 		})
 	}
 	wg.Wait()

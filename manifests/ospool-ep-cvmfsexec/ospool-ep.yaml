@@ -67,6 +67,7 @@ spec:
         volumeMounts:
         - mountPath: /pilot
           name: scratch
+      volumes:
         - emptyDir:
             sizeLimit: 5Gi
           name: scratch

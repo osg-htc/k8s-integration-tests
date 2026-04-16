@@ -53,7 +53,7 @@ spec:
         - mountPath: /pilot
           name: scratch
         - name: cvmfs
-          path: /cvmfs
+          mountPath: /cvmfs
       initContainers:
       - command:
         - chown
