@@ -1,0 +1,3 @@
+resources:
+   - ../ospool-ep-cvmfsexec/central-manager.yaml
+   - ospool-ep.yaml

@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ospool-ep
+    name: ospool-ep
+  name: ospool-ep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ospool-ep
+  template:
+    metadata:
+      labels:
+        app: ospool-ep
+    spec:
+      containers:
+      - env:
+        - name: GLIDEIN_ResourceName
+          value: CHTC-DEV-EP-mwestphall
+        - name: GLIDEIN_Site
+          value: CHTC
+        - name: TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: token
+              name: pool-token
+        - name: CONDOR_HOST
+          value: test-cm
+        - name: CVMFSEXEC_REPOS
+          value: 'oasis.opensciencegrid.org singularity.opensciencegrid.org'
+        - name: CVMFSEXEC_DEBUG
+          value: 'True'
+        - name: GLIDEIN_Start_Extra
+          value: 'True'
+        - name: OSG_SQUID_LOCATION
+          value: 'None'
+        - name: OSG_SQUID_LOCATION
+          value: 'None'
+        - name: ENABLE_REMOTE_SYSLOG
+          value: 'False'
+        # These overwrite the default values to run startd crons more frequently
+        # This is needed to complete tests in a timely manner
+        - name: _CONDOR_STARTD_CRON_base_PERIOD
+          value: 1m
+        - name: _CONDOR_STARTD_CRON_userenv_PERIOD
+          value: 1m
+        image: hub.opensciencegrid.org/osg-htc/ospool-ep:25-release
+        imagePullPolicy: Always
+        name: ospool-ep
+        securityContext:
+          privileged: true
+          runAsGroup: 1000
+          runAsUser: 1000
+        volumeMounts:
+        - mountPath: /pilot
+          name: scratch
+      initContainers:
+      - command:
+        - chown
+        - -R
+        - 1000:1000
+        - /pilot
+        image: hub.opensciencegrid.org/library/alpine:3
+        name: chown-pilot-dir
+        volumeMounts:
+        - mountPath: /pilot
+          name: scratch
+        - emptyDir:
+            sizeLimit: 5Gi
+          name: scratch
