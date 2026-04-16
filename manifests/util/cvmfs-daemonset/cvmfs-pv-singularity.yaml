@@ -21,16 +21,8 @@ spec:
   - ReadOnlyMany
   persistentVolumeReclaimPolicy: Retain
   storageClassName: cvmfs-singularity
-  local:
+  hostPath:
     path: /var/lib/cvmfs-k8s/singularity.opensciencegrid.org
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: kubernetes.io/hostname
-          operator: NotIn
-          values:
-          -  fake
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
