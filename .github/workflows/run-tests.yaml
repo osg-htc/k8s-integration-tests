@@ -30,7 +30,7 @@ jobs:
       with:
         go-version: '1.26'
     - name: Setup CVMFS
-      run: scripts/setup_cvmfs.sh
+      run: sudo scripts/setup_cvmfs.sh
     - name: Bind-Mount CVMFS into Minikube
       run: minikube bind /cvmfs:/cvmfs &
     - name: 'Test OSPool EP with cvmfs bind mount'
