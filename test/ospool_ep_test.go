@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -16,7 +15,9 @@ import (
 
 // TWO_MINUTES is the default retry configuration for polling tests
 var TWO_MINUTES = Retry{12, 10 * time.Second}
-var SIX_MINUTES = Retry{12, 30 * time.Second}
+
+// CVMFS takes a longer time than expected to advertise
+var TEN_MINUTES = Retry{20, 30 * time.Second}
 
 // Check that all deployments in the namespace become "ready" within 2 minutes
 func subtestDeploymentsReady(th TestHandle) {
@@ -47,15 +48,9 @@ func subtestHasCVMFS(th TestHandle) {
 	cmPod := th.getPodNameByLabel("app=test-cm")
 	epPod := th.getPodNameByLabel("app=ospool-ep")
 
-	cvmfsAds := []string{"HAS_CVMFS_singularity_opensciencegrid_org", }
-	var wg sync.WaitGroup
-	for _, ad := range cvmfsAds {
-		cmd := fmt.Sprintf(`condor_status -const 'regexp("%v",Machine)' -af %v`, epPod, ad)
-		wg.Go(func() {
-			th.waitUntilPodExecSucceeds(cmPod, "", cmd, SIX_MINUTES, truthy)
-		})
-	}
-	wg.Wait()
+	cvmfsAd := "HAS_CVMFS_singularity_opensciencegrid_org"
+	cmd := fmt.Sprintf(`condor_status -const 'regexp("%v",Machine)' -af %v`, epPod, cvmfsAd)
+	th.waitUntilPodExecSucceeds(cmPod, "", cmd, TEN_MINUTES, truthy)
 }
 
 // runOSPoolEPTests runs the set of OSPool EP tests against the EP configuration defined
