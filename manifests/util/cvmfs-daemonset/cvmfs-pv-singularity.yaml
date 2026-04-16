@@ -1,14 +1,3 @@
-# Via https://github.com/opensciencegrid/osg-k8s-cvmfs/blob/main/cvmfs-pvcs/cvmfs-pv-singularity.yaml
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: cvmfs-singularity
-# Local storage does not need a provisioner
-provisioner: kubernetes.io/no-provisioner
-# Give it out as-is
-reclaimPolicy: Retain
-volumeBindingMode: Immediate
----
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -19,8 +8,6 @@ spec:
   volumeMode: Filesystem
   accessModes:
   - ReadOnlyMany
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: cvmfs-singularity
   hostPath:
     path: /var/lib/cvmfs-k8s/singularity.opensciencegrid.org
 ---
