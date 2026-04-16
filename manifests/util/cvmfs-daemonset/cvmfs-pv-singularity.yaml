@@ -16,5 +16,10 @@ kind: PersistentVolumeClaim
 metadata:
   name: cvmfs-singularity
 spec:
+  accessModes:
+  - ReadOnlyMany
+  resources:
+    requests:
+      storage: 2G
   storageClassName: ""
   volumeName: cvmfs-singularity
