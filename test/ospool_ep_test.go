@@ -57,12 +57,10 @@ func subtestHasCVMFS(th TestHandle) {
 	wg.Wait()
 }
 
-// Entrypoint test: Creates a fresh namespace, applies a kustomization
-// that creates an OSPool EP and a CM, then runs sub-tests
-func TestOSPoolEP(t *testing.T) {
-	t.Parallel()
-
-	resourcePath, err := filepath.Abs("../manifests/ospool-ep")
+// runOSPoolEPTests runs the set of OSPool EP tests against the EP configuration defined
+// in the given kustomizeDir
+func runOSPoolEPTests(t *testing.T, kustomizeDir string) {
+	resourcePath, err := filepath.Abs(kustomizeDir)
 	require.NoError(t, err)
 
 	namespace := "test-ospool-ep-" + strings.ToLower(random.UniqueId())
@@ -102,4 +100,19 @@ func TestOSPoolEP(t *testing.T) {
 	t.Run("Confirm EP container advertises CVMFS", func(t *testing.T) {
 		subtestHasCVMFS(TestHandle{t, options})
 	})
+
+}
+
+// TestOSPoolEPCvmfsexec is an entrypoint test for testing an EP configured
+// with CVMFSExec
+func TestOSPoolEPCvmfsexec(t *testing.T) {
+	t.Parallel()
+	runOSPoolEPTests(t, "../manifests/ospool-ep-cvmfsexec")
+}
+
+// TestOSPoolEPCvmfsexec is an entrypoint test for testing an EP configured
+// with CVMFS bind mounts
+func TestOSPoolEPCvmfsBindMount(t *testing.T) {
+	t.Parallel()
+	runOSPoolEPTests(t, "../manifests/ospool-ep-cvmfs-bind")
 }

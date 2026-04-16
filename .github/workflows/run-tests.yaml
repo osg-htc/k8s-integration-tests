@@ -2,9 +2,9 @@ name:
 on:
   workflow_dispatch: 
 jobs:
-  test-ospool-ep:
+  test-ospool-ep-cvmfsexec:
     runs-on: ubuntu-22.04
-    name: Run OSPool EP tests
+    name: Run OSPool EP test (cvmfsexec)
     steps:
     - name: checkout
       uses: actions/checkout@v5
@@ -14,5 +14,24 @@ jobs:
       uses: actions/setup-go@v6
       with:
         go-version: '1.26'
-    - name: 'test'
-      run: go test ./test -v -run TestOSPoolEP
+    - name: 'Test OSPool EP with cvmfsexec'
+      run: go test ./test -v -run TestOSPoolEPCvmfsExec
+      
+  test-ospool-ep-bind-mount:
+    runs-on: ubuntu-22.04
+    name: Run OSPool EP tests (cvmfs bind mount)
+    steps:
+    - name: checkout
+      uses: actions/checkout@v5
+    - name: Start minikube
+      uses: medyagh/setup-minikube@latest
+    - name: Install Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: '1.26'
+    - name: Setup CVMFS
+      run: scripts/setup_cvmfs.sh
+    - name: Bind-Mount CVMFS into Minikube
+      run: minikube bind /cvmfs:/cvmfs &
+    - name: 'Test OSPool EP with cvmfs bind mount'
+      run: go test ./test -v -run TestOSPoolEPCvmfsBindMount
