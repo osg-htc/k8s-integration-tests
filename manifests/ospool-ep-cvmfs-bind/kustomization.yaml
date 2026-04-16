@@ -1,3 +1,4 @@
 resources:
-   - central-manager.yaml
+   - github.com/opensciencegrid/osg-k8s-cvmfs/cvmfs-daemonset?ref=main
+   - ../ospool-ep-base
    - ospool-ep.yaml

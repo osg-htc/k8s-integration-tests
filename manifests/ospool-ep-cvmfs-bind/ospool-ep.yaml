@@ -52,8 +52,9 @@ spec:
         volumeMounts:
         - mountPath: /pilot
           name: scratch
-        - name: cvmfs
-          mountPath: /cvmfs
+        - name: cvmfs-singularity
+          mountPath: /cvmfs/singularity.opensciencegrid.org
+          mountPropagation: Bidirectional
       initContainers:
       - command:
         - chown
@@ -66,9 +67,9 @@ spec:
         - mountPath: /pilot
           name: scratch
       volumes:
-      - hostPath:
-          path: /cvmfs
-        name: cvmfs
+      - name: cvmfs-singularity
+        persistentVolumeClaim:
+          claimName: cvmfs-singularity
       - emptyDir:
           sizeLimit: 5Gi
         name: scratch
