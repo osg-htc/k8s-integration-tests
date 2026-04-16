@@ -1,0 +1,7 @@
+# Via https://github.com/opensciencegrid/osg-k8s-cvmfs
+resources:
+- cvmfs-nodeplugin.yaml
+- cvmfs-user.yaml
+- frontier.yaml
+- service-frontier.yaml
+- cvmfs-pv-singularity.yaml

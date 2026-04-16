@@ -1,4 +1,4 @@
-name: 
+name: Run K8s Integration Tests
 on:
   workflow_dispatch: 
 jobs:
