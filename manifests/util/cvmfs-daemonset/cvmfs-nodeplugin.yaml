@@ -36,9 +36,6 @@ spec:
            limits:
              memory: 4Gi
              cpu: 1
-           requests:
-             memory: 0.5Gi
-             cpu: 0.25
         volumeMounts:
         - mountPath: /cvmfs
           name:  cvmfs-base
