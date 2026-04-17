@@ -46,6 +46,10 @@ spec:
           value: 1m
         - name: _CONDOR_STARTD_CRON_userenv_PERIOD
           value: 1m
+        - name: OSG_DEFAULT_CONTAINER_DISTRIBUTION
+          value: 100%__htc/minimal:0
+        - name: OSG_DEFAULT_CONTAINER_DISTRIBUTION_GPU
+          value: 100%__htc/minimal:0
         image: hub.opensciencegrid.org/osg-htc/ospool-ep:25-release
         imagePullPolicy: Always
         name: ospool-ep
