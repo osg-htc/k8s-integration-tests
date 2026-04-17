@@ -2,6 +2,7 @@ package test
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -71,19 +73,28 @@ func (th *TestHandle) getPodNameByLabel(label string) string {
 	return pods[0].Name
 }
 
+// eventTimestamp returns the most precise available timestamp for a core/v1 Event.
+// core/v1 events use LastTimestamp; EventTime is only set for events.k8s.io/v1.
+func eventTimestamp(e corev1.Event) time.Time {
+	if !e.LastTimestamp.IsZero() {
+		return e.LastTimestamp.Time
+	}
+	return e.EventTime.Time
+}
+
+// getPodEvents returns a string containing all observed events for a pod
+// in timestamp order
 func (th *TestHandle) getPodEvents(podName string) string {
 	fieldSelector := fmt.Sprintf("involvedObject.name=%v", podName)
 	events := k8s.ListEvents(th.T, th.options, v1.ListOptions{FieldSelector: fieldSelector})
 
-	// th.T.Logf("Logs for pod %v:\n%v", epPodName, logs)
+	slices.SortFunc(events, func(a, b corev1.Event) int {
+		return eventTimestamp(a).Compare(eventTimestamp(b))
+	})
+
 	var sb strings.Builder
 	for _, event := range events {
-		// core/v1 events use LastTimestamp; EventTime is only set for events.k8s.io/v1
-		timestamp := event.LastTimestamp.Time
-		if timestamp.IsZero() {
-			timestamp = event.EventTime.Time
-		}
-		fmt.Fprintf(&sb, "%v\t%v\t%v\n", timestamp, event.Type, event.Message)
+		fmt.Fprintf(&sb, "%v\t%v\t%v\n", eventTimestamp(event), event.Type, event.Message)
 	}
 	return sb.String()
 }
