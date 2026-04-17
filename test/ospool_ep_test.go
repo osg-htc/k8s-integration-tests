@@ -87,7 +87,7 @@ func runOSPoolEPTests(t *testing.T, kustomizeDir string) {
 	}
 	// defer deleting the k8s resources created for the test
 	t.Cleanup(func() {
-		dumpPodEvents(th, logDir)
+		th.dumpPodEvents(logDir)
 		k8s.DeleteNamespace(t, options, namespace)
 		th.deletePoolPasswordAndIDToken(tokenData)
 		k8s.KubectlDeleteFromKustomize(t, options, resourcePath)
