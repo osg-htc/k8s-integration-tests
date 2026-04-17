@@ -14,8 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// FIVE_MINUTES is the default retry configuration for polling tests
-var FIVE_MINUTES = Retry{10, 30 * time.Second}
+// TWO_MINUTES is the default retry configuration for polling tests
+var TWO_MINUTES = Retry{10, 30 * time.Second}
 
 // TEN_MINUTES is a longer timeout for tests that take a long time such as CVMFS tests
 var TEN_MINUTES = Retry{20, 30 * time.Second}
@@ -23,7 +23,7 @@ var TEN_MINUTES = Retry{20, 30 * time.Second}
 // Check that all deployments in the namespace become "ready" within 2 minutes
 func subtestDeploymentsReady(th TestHandle) {
 	deployments := []string{"test-cm", "ospool-ep"}
-	th.waitUntilDeploymentsReady(deployments, FIVE_MINUTES)
+	th.waitUntilDeploymentsReady(deployments, TWO_MINUTES)
 }
 
 // Check that condor_status run against the CM lists the EP
@@ -32,7 +32,7 @@ func subtestCondorStatus(th TestHandle) {
 	epPod := th.getPodNameByLabel("app=ospool-ep")
 	// Check that condor_status filtered on the EP's name returns a non-empty string
 	cmd := fmt.Sprintf(`condor_status -const 'regexp("%v",Machine)'`, epPod)
-	th.waitUntilPodExecSucceeds(cmPod, "", cmd, FIVE_MINUTES, nonEmpty)
+	th.waitUntilPodExecSucceeds(cmPod, "", cmd, TWO_MINUTES, nonEmpty)
 }
 
 // Check that the EP advertises that it can run Apptainer
@@ -41,7 +41,7 @@ func subtestHasSingularity(th TestHandle) {
 	epPod := th.getPodNameByLabel("app=ospool-ep")
 	// Check that condor_status filtered on the EP's name returns a non-empty string
 	cmd := fmt.Sprintf(`condor_status -const 'regexp("%v",Machine)' -af HAS_SINGULARITY`, epPod)
-	th.waitUntilPodExecSucceeds(cmPod, "", cmd, FIVE_MINUTES, truthy)
+	th.waitUntilPodExecSucceeds(cmPod, "", cmd, TWO_MINUTES, truthy)
 }
 
 // Check that the EP advertises the two test CVMFS repos
@@ -78,9 +78,11 @@ func runOSPoolEPTests(t *testing.T, kustomizeDir string) {
 	k8s.KubectlApplyFromKustomize(t, options, resourcePath)
 
 	// defer deleting the k8s resources created for the test
-	defer k8s.DeleteNamespace(t, options, namespace)
-	defer th.deletePoolPasswordAndIDToken(tokenData)
-	defer k8s.KubectlDeleteFromKustomize(t, options, resourcePath)
+	t.Cleanup(func() {
+		k8s.DeleteNamespace(t, options, namespace)
+		th.deletePoolPasswordAndIDToken(tokenData)
+		k8s.KubectlDeleteFromKustomize(t, options, resourcePath)
+	})
 
 	t.Run("Confirm deployments become ready.", func(t *testing.T) {
 		subtestDeploymentsReady(TestHandle{t, options})
@@ -89,21 +91,21 @@ func runOSPoolEPTests(t *testing.T, kustomizeDir string) {
 	t.Run("Confirm condor_status lists the EP.", func(t *testing.T) {
 		t.Parallel()
 		th := TestHandle{t, options}
-		t.Cleanup(func() { cleanupDumpDebugLogs(th) })
+		t.Cleanup(func() { dumpDebugLogs(th) })
 		subtestCondorStatus(th)
 	})
 
 	t.Run("Confirm EP container advertises singularity.", func(t *testing.T) {
 		t.Parallel()
 		th := TestHandle{t, options}
-		t.Cleanup(func() { cleanupDumpDebugLogs(th) })
+		t.Cleanup(func() { dumpDebugLogs(th) })
 		subtestHasSingularity(th)
 	})
 
 	t.Run("Confirm EP container advertises CVMFS", func(t *testing.T) {
 		t.Parallel()
 		th := TestHandle{t, options}
-		t.Cleanup(func() { cleanupDumpDebugLogs(th) })
+		t.Cleanup(func() { dumpDebugLogs(th) })
 		subtestHasCVMFS(th)
 	})
 
@@ -123,8 +125,8 @@ func TestOSPoolEPCvmfsBindMount(t *testing.T) {
 	runOSPoolEPTests(t, "../manifests/ospool-ep-cvmfs-bind")
 }
 
-// cleanupDumpDebugLogs dumps pod events and logs upon test completion
-func cleanupDumpDebugLogs(th TestHandle) {
+// dumpDebugLogs dumps pod events and logs upon test completion
+func dumpDebugLogs(th TestHandle) {
 	epPodName := th.getPodNameByLabel("app=ospool-ep")
 	epPod := k8s.GetPod(th.T, th.options, epPodName)
 	logs := k8s.GetPodLogs(th.T, th.options, epPod, "")
