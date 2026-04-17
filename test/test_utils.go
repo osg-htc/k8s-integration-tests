@@ -84,13 +84,13 @@ func eventTimestamp(e corev1.Event) time.Time {
 	return e.EventTime.Time
 }
 
-// getPodEvents returns a string containing all observed events for a pod
+// dumpPodEvents returns a string containing all observed events for a pod
 // in timestamp order
-func (th *TestHandle) getPodEvents(podName string) (string, error) {
+func (th *TestHandle) dumpPodEvents(podName string, outputDir string) (eventsLog string, err error) {
 	fieldSelector := fmt.Sprintf("involvedObject.name=%v", podName)
 	events, err := k8s.ListEventsE(th.T, th.options, v1.ListOptions{FieldSelector: fieldSelector})
 	if err != nil {
-		return "", err
+		return
 	}
 
 	slices.SortFunc(events, func(a, b corev1.Event) int {
@@ -101,7 +101,16 @@ func (th *TestHandle) getPodEvents(podName string) (string, error) {
 	for _, event := range events {
 		fmt.Fprintf(&sb, "%v\t%v\t%v\n", eventTimestamp(event), event.Type, event.Message)
 	}
-	return sb.String(), nil
+
+	eventsLog = sb.String()
+	path := filepath.Join(outputDir, fmt.Sprintf("%v.events", podName))
+
+	err = os.WriteFile(path, []byte(eventsLog), 0644)
+	if err != nil {
+		return
+	}
+
+	return
 }
 
 func (th *TestHandle) dumpPodLogs(podName string, outputDir string) (err error) {
@@ -129,8 +138,8 @@ func (th *TestHandle) dumpPodLogs(podName string, outputDir string) (err error) 
 	return
 }
 
-// dumpPodEvents dumps pod events upon test completion
-func (th *TestHandle) dumpPodEvents(logDir string) {
+// dumpPodInformation dumps pod events upon test completion
+func (th *TestHandle) dumpPodInformation(logDir string) {
 	pods := k8s.ListPods(th.T, th.options, v1.ListOptions{})
 	// First, export all pod logs as build artifacts
 	for _, pod := range pods {
@@ -142,7 +151,7 @@ func (th *TestHandle) dumpPodEvents(logDir string) {
 
 	// then, dump pod events
 	for _, pod := range pods {
-		events, err := th.getPodEvents(pod.Name)
+		events, err := th.dumpPodEvents(pod.Name, logDir)
 		if err != nil {
 			th.T.Logf("Unable to get events for pod %v: %v", pod, err)
 		}

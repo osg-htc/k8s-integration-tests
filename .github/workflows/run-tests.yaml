@@ -17,7 +17,6 @@ jobs:
     - name: 'Test OSPool EP with cvmfsexec'
       run: go test ./test -v -run TestOSPoolEPCvmfsexec -timeout 15m
     - name: 'Upload Test Logs'
-      if: failure()
       uses: actions/upload-artifact@v4
       with:
         name: ospool-ep-cvmfsexec
@@ -46,7 +45,6 @@ jobs:
     - name: 'Test OSPool EP with cvmfs bind mount'
       run: go test ./test -v -run TestOSPoolEPCvmfsBindMount -timeout 15m
     - name: 'Upload Test Logs'
-      if: failure()
       uses: actions/upload-artifact@v4
       with:
         name: ospool-ep-cvmfs-bind
