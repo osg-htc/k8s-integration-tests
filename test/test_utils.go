@@ -128,3 +128,24 @@ func (th *TestHandle) dumpPodLogs(podName string, outputDir string) (err error) 
 	}
 	return
 }
+
+// dumpPodEvents dumps pod events upon test completion
+func (th *TestHandle) dumpPodEvents(logDir string) {
+	pods := k8s.ListPods(th.T, th.options, v1.ListOptions{})
+	// First, export all pod logs as build artifacts
+	for _, pod := range pods {
+		err := th.dumpPodLogs(pod.Name, logDir)
+		if err != nil {
+			th.T.Logf("Unable to export logs for pod %v: %v", pod, err)
+		}
+	}
+
+	// then, dump pod events
+	for _, pod := range pods {
+		events, err := th.getPodEvents(pod.Name)
+		if err != nil {
+			th.T.Logf("Unable to get events for pod %v: %v", pod, err)
+		}
+		th.T.Logf("---\nEvents for pod %v:\n%v\n---", pod.Name, events)
+	}
+}

@@ -132,20 +132,3 @@ func TestOSPoolEPCvmfsBindMount(t *testing.T) {
 	t.Parallel()
 	runOSPoolEPTests(t, "../manifests/ospool-ep-cvmfs-bind")
 }
-
-// dumpPodEvents dumps pod events upon test completion
-func dumpPodEvents(th TestHandle, logDir string) {
-	pods := k8s.ListPods(th.T, th.options, v1.ListOptions{})
-	for _, pod := range pods {
-		events, err := th.getPodEvents(pod.Name)
-		if err != nil {
-			th.T.Logf("Unable to get events for pod %v: %v", pod, err)
-		}
-		th.T.Logf("---\nEvents for pod %v:\n%v\n---", pod.Name, events)
-
-		err = th.dumpPodLogs(pod.Name, logDir)
-		if err != nil {
-			th.T.Logf("Unable to export logs for pod %v: %v", pod, err)
-		}
-	}
-}
