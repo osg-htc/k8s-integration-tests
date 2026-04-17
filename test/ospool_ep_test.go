@@ -9,6 +9,7 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/stretchr/testify/require"
 )
@@ -86,15 +87,24 @@ func runOSPoolEPTests(t *testing.T, kustomizeDir string) {
 	})
 
 	t.Run("Confirm condor_status lists the EP.", func(t *testing.T) {
-		subtestCondorStatus(TestHandle{t, options})
+		t.Parallel()
+		th := TestHandle{t, options}
+		t.Cleanup(func() { cleanupDumpDebugLogs(th) })
+		subtestCondorStatus(th)
 	})
 
 	t.Run("Confirm EP container advertises singularity.", func(t *testing.T) {
-		subtestHasSingularity(TestHandle{t, options})
+		t.Parallel()
+		th := TestHandle{t, options}
+		t.Cleanup(func() { cleanupDumpDebugLogs(th) })
+		subtestHasSingularity(th)
 	})
 
 	t.Run("Confirm EP container advertises CVMFS", func(t *testing.T) {
-		subtestHasCVMFS(TestHandle{t, options})
+		t.Parallel()
+		th := TestHandle{t, options}
+		t.Cleanup(func() { cleanupDumpDebugLogs(th) })
+		subtestHasCVMFS(th)
 	})
 
 }
@@ -111,4 +121,20 @@ func TestOSPoolEPCvmfsexec(t *testing.T) {
 func TestOSPoolEPCvmfsBindMount(t *testing.T) {
 	t.Parallel()
 	runOSPoolEPTests(t, "../manifests/ospool-ep-cvmfs-bind")
+}
+
+// cleanupDumpDebugLogs dumps pod events and logs upon test completion
+func cleanupDumpDebugLogs(th TestHandle) {
+	epPodName := th.getPodNameByLabel("app=ospool-ep")
+	epPod := k8s.GetPod(th.T, th.options, epPodName)
+	logs := k8s.GetPodLogs(th.T, th.options, epPod, "")
+	fieldSelector := fmt.Sprintf("involvedObject.name=%v", epPodName)
+	events := k8s.ListEvents(th.T, th.options, v1.ListOptions{FieldSelector: fieldSelector})
+
+	th.T.Logf("Logs for pod %v:\n%v", epPodName, logs)
+	var sb strings.Builder
+	for _, event := range events {
+		fmt.Fprintf(&sb, "%v\t%v\t%v\n", event.EventTime, event.Type, event.Message)
+	}
+	th.T.Logf("Events for pod %v:\n%v", epPodName, sb.String())
 }
