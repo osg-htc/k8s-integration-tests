@@ -9,6 +9,7 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/stretchr/testify/require"
 )
@@ -16,12 +17,17 @@ import (
 // TWO_MINUTES is the default retry configuration for polling tests
 var TWO_MINUTES = Retry{12, 10 * time.Second}
 
-// TEN_MINUTES is a longer timeout for tests that take a long time such as CVMFS tests
-var TEN_MINUTES = Retry{20, 30 * time.Second}
+// SIX_MINUTES is a longer timeout for tests that take a long time such as CVMFS tests
+var SIX_MINUTES = Retry{12, 30 * time.Second}
 
 // Check that all deployments in the namespace become "ready" within 2 minutes
 func subtestDeploymentsReady(th TestHandle) {
-	deployments := []string{"test-cm", "ospool-ep"}
+	allDeploys := k8s.ListDeployments(th.T, th.options, v1.ListOptions{})
+	deployments := make([]string, 0)
+	for _, deploy := range allDeploys {
+		deployments = append(deployments, deploy.Name)
+	}
+	// deployments := []string{"test-cm", "ospool-ep"}
 	th.waitUntilDeploymentsReady(deployments, TWO_MINUTES)
 }
 
@@ -50,7 +56,7 @@ func subtestHasCVMFS(th TestHandle) {
 
 	cvmfsAd := "HAS_CVMFS_singularity_opensciencegrid_org"
 	cmd := fmt.Sprintf(`condor_status -const 'regexp("%v",Machine)' -af %v`, epPod, cvmfsAd)
-	th.waitUntilPodExecSucceeds(cmPod, "", cmd, TEN_MINUTES, truthy)
+	th.waitUntilPodExecSucceeds(cmPod, "", cmd, SIX_MINUTES, truthy)
 }
 
 // runOSPoolEPTests runs the set of OSPool EP tests against the EP configuration defined
@@ -60,25 +66,19 @@ func runOSPoolEPTests(t *testing.T, kustomizeDir string) {
 	require.NoError(t, err)
 
 	namespace := "test-ospool-ep-" + strings.ToLower(random.UniqueId())
-
 	options := k8s.NewKubectlOptions("", "", namespace)
-
 	th := TestHandle{t, options}
 
 	// create k8s namespaces for the test
 	k8s.CreateNamespace(t, options, namespace)
 	// create the required credentials for cross-container communication in the test
-	tokenData := th.generatePoolPasswordAndIDToken(IDTokenOptions{
-		trustDomain: "test-cm",
-		identity:    "condor@test-cm",
-		secretName:  "pool-token",
-	})
+	tokenData := th.generatePoolPasswordAndIDToken("test-cm", "condor@test-cm", "pool-token")
 	// create k8s resources for the test
 	k8s.KubectlApplyFromKustomize(t, options, resourcePath)
 
 	// defer deleting the k8s resources created for the test
 	t.Cleanup(func() {
-		dumpDebugLogs(th)
+		dumpPodEvents(th)
 		k8s.DeleteNamespace(t, options, namespace)
 		th.deletePoolPasswordAndIDToken(tokenData)
 		k8s.KubectlDeleteFromKustomize(t, options, resourcePath)
@@ -124,8 +124,10 @@ func TestOSPoolEPCvmfsBindMount(t *testing.T) {
 	runOSPoolEPTests(t, "../manifests/ospool-ep-cvmfs-bind")
 }
 
-// dumpDebugLogs dumps pod events and logs upon test completion
-func dumpDebugLogs(th TestHandle) {
-	epPodName := th.getPodNameByLabel("app=ospool-ep")
-	th.T.Logf("---\nEvents for pod %v:\n%v\n---", epPodName, th.getPodEvents(epPodName))
+// dumpPodEvents dumps pod events upon test completion
+func dumpPodEvents(th TestHandle) {
+	pods := k8s.ListPods(th.T, th.options, v1.ListOptions{})
+	for _, pod := range pods {
+		th.T.Logf("---\nEvents for pod %v:\n%v\n---", pod.Name, th.getPodEvents(pod.Name))
+	}
 }

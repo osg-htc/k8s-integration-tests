@@ -44,12 +44,12 @@ func applyTemplate(t *testing.T, templatePath string, data any) string {
 // generatePoolPasswordAndIDToken creates a random pool password and uses it to generate
 // a signed HTCondor IDToken via a temporary pod. Applies the resulting password and token
 // as Kubernetes resources and returns their rendered manifests for later cleanup.
-func (th *TestHandle) generatePoolPasswordAndIDToken(tokenOptions IDTokenOptions) IDTokenData {
+func (th *TestHandle) generatePoolPasswordAndIDToken(trustDomain string, identity string, secretName string) IDTokenData {
 	// Generate a random POOL password
 	passwd := randomPoolPassword(16)
 	// Create a new K8s template based on the selected tokenOptions and Pool password
 	passwdManifest := applyTemplate(th.T, "../manifests/util/generate-idtoken.yaml", map[string]string{
-		"trustDomain":  tokenOptions.trustDomain,
+		"trustDomain":  trustDomain,
 		"poolPassword": passwd,
 	})
 
@@ -67,15 +67,15 @@ func (th *TestHandle) generatePoolPasswordAndIDToken(tokenOptions IDTokenOptions
 		"-authz", "READ",
 		"-authz", "ADVERTISE_STARTD",
 		"-authz", "ADVERTISE_MASTER",
-		"-identity", tokenOptions.identity)
+		"-identity", identity)
 
 	tokenManifest := applyTemplate(th.T, "../manifests/util/idtoken.yaml", map[string]string{
-		"name":  tokenOptions.secretName,
+		"name":  secretName,
 		"token": token,
 	})
 
 	k8s.KubectlApplyFromString(th.T, th.options, tokenManifest)
-	k8s.WaitUntilSecretAvailable(th.T, th.options, tokenOptions.secretName, 5, time.Second)
+	k8s.WaitUntilSecretAvailable(th.T, th.options, secretName, 5, time.Second)
 
 	return IDTokenData{
 		passwdManifest: passwdManifest,

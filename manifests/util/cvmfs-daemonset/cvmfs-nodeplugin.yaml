@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: DaemonSet
+kind: Deployment
 metadata:
   name: cvmfs-nodeplugin
   labels: 
@@ -8,6 +8,7 @@ spec:
   selector:
     matchLabels:
       k8s-app: cvmfs-nodeplugin
+  replicas: 1
   template:
     metadata: 
       labels:
