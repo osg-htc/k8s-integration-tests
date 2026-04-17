@@ -2,6 +2,8 @@ package test
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -84,9 +86,12 @@ func eventTimestamp(e corev1.Event) time.Time {
 
 // getPodEvents returns a string containing all observed events for a pod
 // in timestamp order
-func (th *TestHandle) getPodEvents(podName string) string {
+func (th *TestHandle) getPodEvents(podName string) (string, error) {
 	fieldSelector := fmt.Sprintf("involvedObject.name=%v", podName)
-	events := k8s.ListEvents(th.T, th.options, v1.ListOptions{FieldSelector: fieldSelector})
+	events, err := k8s.ListEventsE(th.T, th.options, v1.ListOptions{FieldSelector: fieldSelector})
+	if err != nil {
+		return "", err
+	}
 
 	slices.SortFunc(events, func(a, b corev1.Event) int {
 		return eventTimestamp(a).Compare(eventTimestamp(b))
@@ -96,5 +101,30 @@ func (th *TestHandle) getPodEvents(podName string) string {
 	for _, event := range events {
 		fmt.Fprintf(&sb, "%v\t%v\t%v\n", eventTimestamp(event), event.Type, event.Message)
 	}
-	return sb.String()
+	return sb.String(), nil
+}
+
+func (th *TestHandle) dumpPodLogs(podName string, outputDir string) (err error) {
+	pod, err := k8s.GetPodE(th.T, th.options, podName)
+	if err != nil {
+		return
+	}
+	containers := make([]string, 0)
+	for _, container := range pod.Spec.Containers {
+		containers = append(containers, container.Name)
+	}
+
+	for _, containerName := range containers {
+		logs, err2 := k8s.GetPodLogsE(th.T, th.options, pod, containerName)
+		if err2 != nil {
+			return err2
+		}
+		path := filepath.Join(outputDir, fmt.Sprintf("%v_%v.log", podName, containerName))
+
+		err = os.WriteFile(path, []byte(logs), 0644)
+		if err != nil {
+			return err
+		}
+	}
+	return
 }

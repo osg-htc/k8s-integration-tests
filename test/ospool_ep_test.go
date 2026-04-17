@@ -2,6 +2,7 @@ package test
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -19,6 +20,8 @@ var TWO_MINUTES = Retry{12, 10 * time.Second}
 
 // SIX_MINUTES is a longer timeout for tests that take a long time such as CVMFS tests
 var SIX_MINUTES = Retry{12, 30 * time.Second}
+
+var LOG_ROOT = "/tmp/k8s-tests"
 
 // Check that all deployments in the namespace become "ready" within 2 minutes
 func subtestDeploymentsReady(th TestHandle) {
@@ -76,9 +79,15 @@ func runOSPoolEPTests(t *testing.T, kustomizeDir string) {
 	// create k8s resources for the test
 	k8s.KubectlApplyFromKustomize(t, options, resourcePath)
 
+	// Create a directory for log output
+	logDir := filepath.Join(LOG_ROOT, filepath.Base(kustomizeDir))
+	err = os.MkdirAll(logDir, 0755)
+	if err != nil {
+		t.Logf("Warning: Unable to create log directory %v", logDir)
+	}
 	// defer deleting the k8s resources created for the test
 	t.Cleanup(func() {
-		dumpPodEvents(th)
+		dumpPodEvents(th, logDir)
 		k8s.DeleteNamespace(t, options, namespace)
 		th.deletePoolPasswordAndIDToken(tokenData)
 		k8s.KubectlDeleteFromKustomize(t, options, resourcePath)
@@ -125,9 +134,18 @@ func TestOSPoolEPCvmfsBindMount(t *testing.T) {
 }
 
 // dumpPodEvents dumps pod events upon test completion
-func dumpPodEvents(th TestHandle) {
+func dumpPodEvents(th TestHandle, logDir string) {
 	pods := k8s.ListPods(th.T, th.options, v1.ListOptions{})
 	for _, pod := range pods {
-		th.T.Logf("---\nEvents for pod %v:\n%v\n---", pod.Name, th.getPodEvents(pod.Name))
+		events, err := th.getPodEvents(pod.Name)
+		if err != nil {
+			th.T.Logf("Unable to get events for pod %v: %v", pod, err)
+		}
+		th.T.Logf("---\nEvents for pod %v:\n%v\n---", pod.Name, events)
+
+		err = th.dumpPodLogs(pod.Name, logDir)
+		if err != nil {
+			th.T.Logf("Unable to export logs for pod %v: %v", pod, err)
+		}
 	}
 }
