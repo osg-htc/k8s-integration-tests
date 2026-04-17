@@ -59,7 +59,7 @@ func (th *TestHandle) generatePoolPasswordAndIDToken(tokenOptions IDTokenOptions
 	k8s.KubectlApplyFromString(th.T, th.options, passwdManifest)
 
 	// Wait for the pod to become active
-	k8s.WaitUntilPodAvailable(th.T, th.options, podname, 6, 5*time.Second)
+	k8s.WaitUntilPodAvailable(th.T, th.options, podname, 6, 10*time.Second)
 
 	// Generate an IDToken on the pod using `condor_token_create`
 	token := k8s.ExecPod(th.T, th.options, podname, "",
