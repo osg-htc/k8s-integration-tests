@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -68,4 +69,21 @@ func (th *TestHandle) getPodNameByLabel(label string) string {
 	pods := k8s.ListPods(th.T, th.options, v1.ListOptions{LabelSelector: label})
 	require.Len(th.T, pods, 1)
 	return pods[0].Name
+}
+
+func (th *TestHandle) getPodEvents(podName string) string {
+	fieldSelector := fmt.Sprintf("involvedObject.name=%v", podName)
+	events := k8s.ListEvents(th.T, th.options, v1.ListOptions{FieldSelector: fieldSelector})
+
+	// th.T.Logf("Logs for pod %v:\n%v", epPodName, logs)
+	var sb strings.Builder
+	for _, event := range events {
+		// core/v1 events use LastTimestamp; EventTime is only set for events.k8s.io/v1
+		timestamp := event.LastTimestamp.Time
+		if timestamp.IsZero() {
+			timestamp = event.EventTime.Time
+		}
+		fmt.Fprintf(&sb, "%v\t%v\t%v\n", timestamp, event.Type, event.Message)
+	}
+	return sb.String()
 }

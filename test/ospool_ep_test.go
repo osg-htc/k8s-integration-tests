@@ -9,7 +9,6 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/stretchr/testify/require"
 )
@@ -85,7 +84,9 @@ func runOSPoolEPTests(t *testing.T, kustomizeDir string) {
 	})
 
 	t.Run("Confirm deployments become ready.", func(t *testing.T) {
-		subtestDeploymentsReady(TestHandle{t, options})
+		th := TestHandle{t, options}
+		t.Cleanup(func() { dumpDebugLogs(th) })
+		subtestDeploymentsReady(th)
 	})
 
 	t.Run("Confirm condor_status lists the EP.", func(t *testing.T) {
@@ -128,15 +129,5 @@ func TestOSPoolEPCvmfsBindMount(t *testing.T) {
 // dumpDebugLogs dumps pod events and logs upon test completion
 func dumpDebugLogs(th TestHandle) {
 	epPodName := th.getPodNameByLabel("app=ospool-ep")
-	// epPod := k8s.GetPod(th.T, th.options, epPodName)
-	// logs := k8s.GetPodLogs(th.T, th.options, epPod, "")
-	fieldSelector := fmt.Sprintf("involvedObject.name=%v", epPodName)
-	events := k8s.ListEvents(th.T, th.options, v1.ListOptions{FieldSelector: fieldSelector})
-
-	// th.T.Logf("Logs for pod %v:\n%v", epPodName, logs)
-	var sb strings.Builder
-	for _, event := range events {
-		fmt.Fprintf(&sb, "%v\t%v\t%v\n", event.EventTime, event.Type, event.Message)
-	}
-	th.T.Logf("Events for pod %v:\n%v", epPodName, sb.String())
+	th.T.Logf("Events for pod %v:\n%v", epPodName, th.getPodEvents(epPodName))
 }
