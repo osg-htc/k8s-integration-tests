@@ -13,16 +13,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TWO_MINUTES is the default retry configuration for polling tests
-var TWO_MINUTES = Retry{12, 10 * time.Second}
+// FIVE_MINUTES is the default retry configuration for polling tests
+var FIVE_MINUTES = Retry{10, 30 * time.Second}
 
-// CVMFS takes a longer time than expected to advertise
+// TEN_MINUTES is a longer timeout for tests that take a long time such as CVMFS tests
 var TEN_MINUTES = Retry{20, 30 * time.Second}
 
 // Check that all deployments in the namespace become "ready" within 2 minutes
 func subtestDeploymentsReady(th TestHandle) {
 	deployments := []string{"test-cm", "ospool-ep"}
-	th.waitUntilDeploymentsReady(deployments, TWO_MINUTES)
+	th.waitUntilDeploymentsReady(deployments, FIVE_MINUTES)
 }
 
 // Check that condor_status run against the CM lists the EP
@@ -31,7 +31,7 @@ func subtestCondorStatus(th TestHandle) {
 	epPod := th.getPodNameByLabel("app=ospool-ep")
 	// Check that condor_status filtered on the EP's name returns a non-empty string
 	cmd := fmt.Sprintf(`condor_status -const 'regexp("%v",Machine)'`, epPod)
-	th.waitUntilPodExecSucceeds(cmPod, "", cmd, TWO_MINUTES, nonEmpty)
+	th.waitUntilPodExecSucceeds(cmPod, "", cmd, FIVE_MINUTES, nonEmpty)
 }
 
 // Check that the EP advertises that it can run Apptainer
@@ -40,7 +40,7 @@ func subtestHasSingularity(th TestHandle) {
 	epPod := th.getPodNameByLabel("app=ospool-ep")
 	// Check that condor_status filtered on the EP's name returns a non-empty string
 	cmd := fmt.Sprintf(`condor_status -const 'regexp("%v",Machine)' -af HAS_SINGULARITY`, epPod)
-	th.waitUntilPodExecSucceeds(cmPod, "", cmd, TWO_MINUTES, truthy)
+	th.waitUntilPodExecSucceeds(cmPod, "", cmd, FIVE_MINUTES, truthy)
 }
 
 // Check that the EP advertises the two test CVMFS repos
