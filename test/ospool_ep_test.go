@@ -78,15 +78,14 @@ func runOSPoolEPTests(t *testing.T, kustomizeDir string) {
 
 	// defer deleting the k8s resources created for the test
 	t.Cleanup(func() {
+		dumpDebugLogs(th)
 		k8s.DeleteNamespace(t, options, namespace)
 		th.deletePoolPasswordAndIDToken(tokenData)
 		k8s.KubectlDeleteFromKustomize(t, options, resourcePath)
 	})
 
 	t.Run("Confirm deployments become ready.", func(t *testing.T) {
-		th := TestHandle{t, options}
-		t.Cleanup(func() { dumpDebugLogs(th) })
-		subtestDeploymentsReady(th)
+		subtestDeploymentsReady(TestHandle{t, options})
 	})
 
 	// Bail early here if the deployments do not become live
@@ -128,5 +127,5 @@ func TestOSPoolEPCvmfsBindMount(t *testing.T) {
 // dumpDebugLogs dumps pod events and logs upon test completion
 func dumpDebugLogs(th TestHandle) {
 	epPodName := th.getPodNameByLabel("app=ospool-ep")
-	th.T.Logf("Events for pod %v:\n%v", epPodName, th.getPodEvents(epPodName))
+	th.T.Logf("---\nEvents for pod %v:\n%v\n---", epPodName, th.getPodEvents(epPodName))
 }

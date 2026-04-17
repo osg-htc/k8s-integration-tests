@@ -4,4 +4,3 @@ resources:
 - cvmfs-user.yaml
 - frontier.yaml
 - service-frontier.yaml
-- cvmfs-pv-singularity.yaml
