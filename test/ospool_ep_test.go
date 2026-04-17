@@ -14,7 +14,7 @@ import (
 )
 
 // TWO_MINUTES is the default retry configuration for polling tests
-var TWO_MINUTES = Retry{10, 30 * time.Second}
+var TWO_MINUTES = Retry{12, 10 * time.Second}
 
 // TEN_MINUTES is a longer timeout for tests that take a long time such as CVMFS tests
 var TEN_MINUTES = Retry{20, 30 * time.Second}
@@ -89,25 +89,24 @@ func runOSPoolEPTests(t *testing.T, kustomizeDir string) {
 		subtestDeploymentsReady(th)
 	})
 
+	// Bail early here if the deployments do not become live
+	if t.Failed() {
+		return
+	}
+
 	t.Run("Confirm condor_status lists the EP.", func(t *testing.T) {
 		t.Parallel()
-		th := TestHandle{t, options}
-		t.Cleanup(func() { dumpDebugLogs(th) })
-		subtestCondorStatus(th)
+		subtestCondorStatus(TestHandle{t, options})
 	})
 
 	t.Run("Confirm EP container advertises singularity.", func(t *testing.T) {
 		t.Parallel()
-		th := TestHandle{t, options}
-		t.Cleanup(func() { dumpDebugLogs(th) })
-		subtestHasSingularity(th)
+		subtestHasSingularity(TestHandle{t, options})
 	})
 
 	t.Run("Confirm EP container advertises CVMFS", func(t *testing.T) {
 		t.Parallel()
-		th := TestHandle{t, options}
-		t.Cleanup(func() { dumpDebugLogs(th) })
-		subtestHasCVMFS(th)
+		subtestHasCVMFS(TestHandle{t, options})
 	})
 
 }
