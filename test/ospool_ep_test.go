@@ -128,12 +128,12 @@ func TestOSPoolEPCvmfsBindMount(t *testing.T) {
 // dumpDebugLogs dumps pod events and logs upon test completion
 func dumpDebugLogs(th TestHandle) {
 	epPodName := th.getPodNameByLabel("app=ospool-ep")
-	epPod := k8s.GetPod(th.T, th.options, epPodName)
-	logs := k8s.GetPodLogs(th.T, th.options, epPod, "")
+	// epPod := k8s.GetPod(th.T, th.options, epPodName)
+	// logs := k8s.GetPodLogs(th.T, th.options, epPod, "")
 	fieldSelector := fmt.Sprintf("involvedObject.name=%v", epPodName)
 	events := k8s.ListEvents(th.T, th.options, v1.ListOptions{FieldSelector: fieldSelector})
 
-	th.T.Logf("Logs for pod %v:\n%v", epPodName, logs)
+	// th.T.Logf("Logs for pod %v:\n%v", epPodName, logs)
 	var sb strings.Builder
 	for _, event := range events {
 		fmt.Fprintf(&sb, "%v\t%v\t%v\n", event.EventTime, event.Type, event.Message)
