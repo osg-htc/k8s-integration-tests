@@ -1,0 +1,9 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: registry-issuer-key
+type: Opaque
+stringData:
+  registry.pem: |
+    {{ .RegistryIssuerKey | nindent 4 }}

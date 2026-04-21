@@ -1,0 +1,9 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cache-issuer-key
+type: Opaque
+stringData:
+  cache.pem: |
+    {{ .CacheIssuerKey | nindent 4 }}

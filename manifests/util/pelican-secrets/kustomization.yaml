@@ -1,0 +1,37 @@
+# Placeholder Secrets for the Pelican data-federation stack.
+#
+# These files are Go templates and must be rendered before use. The following
+# template variables must be provided:
+#
+#   Secrets produced:
+#     pelican-certs      — consolidated TLS/CA secret (.CaCert, .TlsCert, .TlsKey)
+#     oidc-client-id     — (.OidcClientId)
+#     oidc-client-secret — (.OidcClientSecret)
+#     server-web-passwd  — (.ServerWebPasswd)
+#     director-issuer-key — (.DirectorIssuerKey)
+#     registry-issuer-key — (.RegistryIssuerKey)
+#     origin-issuer-key   — (.OriginIssuerKey)
+#     cache-issuer-key    — (.CacheIssuerKey)
+#
+#   Variable         Type    Description
+#   --------         ----    -----------
+#   .CaCert          string  PEM-encoded CA certificate
+#   .TlsCert         string  PEM-encoded TLS certificate chain
+#   .TlsKey          string  PEM-encoded TLS private key
+#   .OidcClientId    string  OIDC client ID
+#   .OidcClientSecret string OIDC client secret
+#   .ServerWebPasswd string  Pelican web UI password
+#   .DirectorIssuerKey string PEM-encoded private key for the director service
+#   .RegistryIssuerKey string PEM-encoded private key for the registry service
+#   .OriginIssuerKey   string PEM-encoded private key for the origin service
+#   .CacheIssuerKey    string PEM-encoded private key for the cache service
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - tls-secrets.yaml
+  - director-issuer-key.yaml
+  - registry-issuer-key.yaml
+  - origin-issuer-key.yaml
+  - cache-issuer-key.yaml
