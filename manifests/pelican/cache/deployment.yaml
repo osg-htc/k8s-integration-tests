@@ -1,0 +1,145 @@
+---
+# Pelican cache deployment.
+# Waits for director, registry, and origin to be healthy before starting.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cache
+  labels:
+    app: cache
+    app.kubernetes.io/name: cache
+    app.kubernetes.io/component: cache
+    app.kubernetes.io/part-of: pelican
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cache
+  template:
+    metadata:
+      labels:
+        app: cache
+        app.kubernetes.io/name: cache
+        app.kubernetes.io/component: cache
+        app.kubernetes.io/part-of: pelican
+    spec:
+      initContainers:
+        - name: wait-for-director
+          image: curlimages/curl:8.19.0
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for director to be ready..."
+              until curl -sk https://director:8444/api/v1.0/health; do
+                echo "director not ready, retrying in 5s..."
+                sleep 5
+              done
+              echo "director is ready."
+        - name: wait-for-registry
+          image: curlimages/curl:8.19.0
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for registry to be ready..."
+              until curl -sk https://registry:8444/api/v1.0/health; do
+                echo "registry not ready, retrying in 5s..."
+                sleep 5
+              done
+              echo "registry is ready."
+        - name: wait-for-origin
+          image: curlimages/curl:8.19.0
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for origin to be ready..."
+              until curl -sk https://origin:8444/api/v1.0/health; do
+                echo "origin not ready, retrying in 5s..."
+                sleep 5
+              done
+              echo "origin is ready."
+      containers:
+        - name: cache
+          image: hub.opensciencegrid.org/pelican_platform/cache:v7.22.0
+          ports:
+            - name: https
+              containerPort: 8444
+              protocol: TCP
+          resources:
+            limits:
+              memory: 256M
+            requests:
+              memory: 256M
+          volumeMounts:
+            # Shared pelican.yaml
+            - name: pelican-config
+              mountPath: /etc/pelican/pelican.yaml
+              subPath: pelican.yaml
+              readOnly: true
+            # Service-specific config.d overlay
+            - name: cache-config
+              mountPath: /etc/pelican/config.d/50-cache.yaml
+              subPath: 50-cache.yaml
+              readOnly: true
+            # TLS / CA certs
+            - name: pelican-certs
+              mountPath: /certs/ca.crt
+              subPath: ca.crt
+              readOnly: true
+            - name: pelican-certs
+              mountPath: /certs/tls.crt
+              subPath: tls.crt
+              readOnly: true
+            - name: pelican-certs
+              mountPath: /certs/tls.key
+              subPath: tls.key
+              readOnly: true
+            # OIDC credentials
+            - name: oidc-client-id
+              mountPath: /etc/pelican/oidc-client-id
+              subPath: oidc-client-id
+              readOnly: true
+            - name: oidc-client-secret
+              mountPath: /etc/pelican/oidc-client-secret
+              subPath: oidc-client-secret
+              readOnly: true
+            # Web UI password
+            - name: server-web-passwd
+              mountPath: /etc/pelican/server-web-passwd
+              subPath: server-web-passwd
+              readOnly: true
+            # Issuer key
+            - name: cache-issuer-key
+              mountPath: /etc/pelican/issuer-keys/cache.pem
+              subPath: cache.pem
+              readOnly: true
+            # Cache data directory
+            - name: cache-data
+              mountPath: /data
+      volumes:
+        - name: pelican-config
+          configMap:
+            name: pelican-config
+        - name: cache-config
+          configMap:
+            name: cache-config
+        - name: pelican-certs
+          secret:
+            secretName: pelican-certs
+        - name: oidc-client-id
+          secret:
+            secretName: oidc-client-id
+        - name: oidc-client-secret
+          secret:
+            secretName: oidc-client-secret
+        - name: server-web-passwd
+          secret:
+            secretName: server-web-passwd
+        - name: cache-issuer-key
+          secret:
+            secretName: cache-issuer-key
+        # Cache uses an emptyDir for transient data; replace with a PVC if persistence is needed.
+        - name: cache-data
+          emptyDir: {}

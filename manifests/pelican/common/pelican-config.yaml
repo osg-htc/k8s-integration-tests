@@ -1,0 +1,28 @@
+# ConfigMap containing the shared pelican.yaml configuration file
+# mounted at /etc/pelican/pelican.yaml on all Pelican services.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pelican-config
+data:
+  pelican.yaml: |
+    ---
+    ConfigLocations:
+      - /etc/pelican/config.d
+
+    Federation:
+      DirectorUrl: https://director:8444
+      DiscoveryUrl: https://director:8444
+      RegistryUrl: https://registry:8444
+
+    Server:
+      WebPort: 8444
+      TLSCACertificateFile: /certs/ca.crt
+      TLSKey: /certs/tls.key
+      TLSCertificateChain: /certs/tls.crt
+      EnablePprof: true
+      StartupTimeout: 5m
+
+    Monitoring:
+      MetricAuthorization: false
+      PromQLAuthorization: false

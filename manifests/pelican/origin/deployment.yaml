@@ -1,0 +1,157 @@
+# Deployment for the Pelican origin service.
+# Depends on director and registry (enforced via initContainers).
+# Mounts a PVC at /data for origin storage.
+# Memory limit: 1536Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: origin
+  labels:
+    app.kubernetes.io/name: origin
+    app.kubernetes.io/component: origin
+    app.kubernetes.io/part-of: pelican
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: origin
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: origin
+        app.kubernetes.io/component: origin
+        app.kubernetes.io/part-of: pelican
+    spec:
+      initContainers:
+        - name: wait-for-director
+          image: curlimages/curl:8.19.0
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for director to be ready..."
+              until curl -sk https://director:8444/api/v1.0/health; do
+                echo "director not ready, retrying in 5s..."
+                sleep 5
+              done
+              echo "director is ready."
+        - name: wait-for-registry
+          image: curlimages/curl:8.19.0
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for registry to be ready..."
+              until curl -sk https://registry:8444/api/v1.0/health; do
+                echo "registry not ready, retrying in 5s..."
+                sleep 5
+              done
+              echo "registry is ready."
+      containers:
+        - name: origin
+          image: hub.opensciencegrid.org/pelican_platform/origin:v7.22.0
+          ports:
+            - name: https
+              containerPort: 8444
+              protocol: TCP
+          resources:
+            limits:
+              memory: 1536Mi
+            requests:
+              memory: 1536Mi
+          readinessProbe:
+            exec:
+              command:
+                - curl
+                - -sk
+                - https://localhost:8444/api/v1.0/health
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command:
+                - curl
+                - -sk
+                - https://localhost:8444/api/v1.0/health
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+          volumeMounts:
+            # Shared pelican.yaml
+            - name: pelican-config
+              mountPath: /etc/pelican/pelican.yaml
+              subPath: pelican.yaml
+              readOnly: true
+            # Origin-specific config.d files
+            - name: origin-config
+              mountPath: /etc/pelican/config.d/50-origin.yaml
+              subPath: 50-origin.yaml
+              readOnly: true
+            - name: origin-config
+              mountPath: /etc/pelican/config.d/90-origin.yaml
+              subPath: 90-origin.yaml
+              readOnly: true
+            # TLS certificates
+            - name: pelican-certs
+              mountPath: /certs/ca.crt
+              subPath: ca.crt
+              readOnly: true
+            - name: pelican-certs
+              mountPath: /certs/tls.crt
+              subPath: tls.crt
+              readOnly: true
+            - name: pelican-certs
+              mountPath: /certs/tls.key
+              subPath: tls.key
+              readOnly: true
+            # OIDC credentials
+            - name: oidc-client-id
+              mountPath: /etc/pelican/oidc-client-id
+              subPath: oidc-client-id
+              readOnly: true
+            - name: oidc-client-secret
+              mountPath: /etc/pelican/oidc-client-secret
+              subPath: oidc-client-secret
+              readOnly: true
+            # Web UI password
+            - name: server-web-passwd
+              mountPath: /etc/pelican/server-web-passwd
+              subPath: server-web-passwd
+              readOnly: true
+            # Issuer private key
+            - name: origin-issuer-key
+              mountPath: /etc/pelican/issuer-keys/origin.pem
+              subPath: origin.pem
+              readOnly: true
+            # Origin data storage (PVC)
+            - name: origin-data
+              mountPath: /data
+      volumes:
+        - name: pelican-config
+          configMap:
+            name: pelican-config
+        - name: origin-config
+          configMap:
+            name: origin-config
+        - name: pelican-certs
+          secret:
+            secretName: pelican-certs
+        - name: oidc-client-id
+          secret:
+            secretName: oidc-client-id
+        - name: oidc-client-secret
+          secret:
+            secretName: oidc-client-secret
+        - name: server-web-passwd
+          secret:
+            secretName: server-web-passwd
+        - name: origin-issuer-key
+          secret:
+            secretName: origin-issuer-key
+        - name: origin-data
+          persistentVolumeClaim:
+            claimName: origin-data

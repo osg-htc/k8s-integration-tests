@@ -10,7 +10,6 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/stretchr/testify/require"
 )
@@ -22,17 +21,6 @@ var TWO_MINUTES = Retry{12, 10 * time.Second}
 var SIX_MINUTES = Retry{12, 30 * time.Second}
 
 var LOG_ROOT = "/tmp/k8s-tests"
-
-// Check that all deployments in the namespace become "ready" within 2 minutes
-func subtestDeploymentsReady(th TestHandle) {
-	allDeploys := k8s.ListDeployments(th.T, th.options, v1.ListOptions{})
-	deployments := make([]string, 0)
-	for _, deploy := range allDeploys {
-		deployments = append(deployments, deploy.Name)
-	}
-	// deployments := []string{"test-cm", "ospool-ep"}
-	th.waitUntilDeploymentsReady(deployments, TWO_MINUTES)
-}
 
 // Check that condor_status run against the CM lists the EP
 func subtestCondorStatus(th TestHandle) {
@@ -94,7 +82,8 @@ func runOSPoolEPTests(t *testing.T, kustomizeDir string) {
 	})
 
 	t.Run("Confirm deployments become ready.", func(t *testing.T) {
-		subtestDeploymentsReady(TestHandle{t, options})
+		th := TestHandle{t, options}
+		th.waitUntilAllDeploymentsReady(TWO_MINUTES)
 	})
 
 	// Bail early here if the deployments do not become live

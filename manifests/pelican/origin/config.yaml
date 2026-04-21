@@ -1,0 +1,42 @@
+# ConfigMap containing origin-specific Pelican config files:
+#   - 50-origin.yaml: storage layout, exports, and XRootD settings
+#   - 90-origin.yaml: OIDC/issuer settings for the origin instance
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: origin-config
+data:
+  50-origin.yaml: |
+    ---
+    Origin:
+      StorageType: posix
+      EnablePublicReads: true
+      Exports:
+        - FederationPrefix: /public
+          Capabilities: ["PublicReads", "Listings", "DirectReads"]
+          IssuerUrls: ["https://origin:8444"]
+          StoragePrefix: /data
+        - FederationPrefix: /private
+          Capabilities: ["Reads", "Writes", "Listings", "DirectReads"]
+          IssuerUrls: ["https://origin:8444"]
+          StoragePrefix: /data
+
+    XRootD:
+      ShutdownTimeout: 0s
+      
+    Server:
+      Hostname: origin
+
+  90-origin.yaml: |
+    ---
+    Origin:
+      EnableOIDC: true
+      EnableIssuer: true
+
+    OIDC:
+      ClientRedirectHostname: localhost:8444
+
+    Issuer:
+      AuthorizationTemplates:
+        - prefix: /data
+          actions: [read, create, modify]

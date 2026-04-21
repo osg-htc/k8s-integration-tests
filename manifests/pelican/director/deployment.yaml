@@ -1,0 +1,113 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: director
+  labels:
+    app.kubernetes.io/name: director
+    app.kubernetes.io/part-of: pelican
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: director
+      app.kubernetes.io/part-of: pelican
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: director
+        app.kubernetes.io/part-of: pelican
+    spec:
+      containers:
+        - name: director
+          image: hub.opensciencegrid.org/pelican_platform/director:v7.22.0
+          ports:
+            - name: https
+              containerPort: 8444
+              protocol: TCP
+          resources:
+            limits:
+              memory: 256Mi
+          readinessProbe:
+            exec:
+              command:
+                - curl
+                - -sk
+                - https://localhost:8444/api/v1.0/health
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command:
+                - curl
+                - -sk
+                - https://localhost:8444/api/v1.0/health
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 5
+          volumeMounts:
+            # pelican.yaml — shared config
+            - name: pelican-config
+              mountPath: /etc/pelican/pelican.yaml
+              subPath: pelican.yaml
+              readOnly: true
+            # director-specific config.d overlay
+            - name: director-config
+              mountPath: /etc/pelican/config.d/50-director.yaml
+              subPath: 50-director.yaml
+              readOnly: true
+            # TLS / CA certificates
+            - name: pelican-certs
+              mountPath: /certs/ca.crt
+              subPath: ca.crt
+              readOnly: true
+            - name: pelican-certs
+              mountPath: /certs/tls.crt
+              subPath: tls.crt
+              readOnly: true
+            - name: pelican-certs
+              mountPath: /certs/tls.key
+              subPath: tls.key
+              readOnly: true
+            # OIDC credentials
+            - name: oidc-client-id
+              mountPath: /etc/pelican/oidc-client-id
+              subPath: oidc-client-id
+              readOnly: true
+            - name: oidc-client-secret
+              mountPath: /etc/pelican/oidc-client-secret
+              subPath: oidc-client-secret
+              readOnly: true
+            # Web UI password
+            - name: server-web-passwd
+              mountPath: /etc/pelican/server-web-passwd
+              subPath: server-web-passwd
+              readOnly: true
+            # Issuer key
+            - name: director-issuer-key
+              mountPath: /etc/pelican/issuer-keys/director.pem
+              subPath: director.pem
+              readOnly: true
+      volumes:
+        - name: pelican-config
+          configMap:
+            name: pelican-config
+        - name: director-config
+          configMap:
+            name: director-config
+        - name: pelican-certs
+          secret:
+            secretName: pelican-certs
+        - name: oidc-client-id
+          secret:
+            secretName: oidc-client-id
+        - name: oidc-client-secret
+          secret:
+            secretName: oidc-client-secret
+        - name: server-web-passwd
+          secret:
+            secretName: server-web-passwd
+        - name: director-issuer-key
+          secret:
+            secretName: director-issuer-key

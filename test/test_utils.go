@@ -50,6 +50,18 @@ func (th *TestHandle) waitUntilDeploymentsReady(deployments []string, retries Re
 	wg.Wait()
 }
 
+// waitUntilAllDeploymentsReady waits until all deployments in the given namespace
+// enter the "Ready" state. Fail the test if one or more deployments are not
+// ready within the timeout.
+func (th *TestHandle) waitUntilAllDeploymentsReady(retries Retry) {
+	allDeploys := k8s.ListDeployments(th.T, th.options, v1.ListOptions{})
+	deployments := make([]string, 0)
+	for _, deploy := range allDeploys {
+		deployments = append(deployments, deploy.Name)
+	}
+	th.waitUntilDeploymentsReady(deployments, retries)
+}
+
 type EvalOutput func(string) bool
 
 // waitUntilPodExecSucceeds tries exec-ing a command in a pod until that command both returns a zero exit code and passes the provided

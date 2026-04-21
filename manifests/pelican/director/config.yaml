@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: director-config
+data:
+  50-director.yaml: |
+    ---
+    Director:
+      CacheSortMethod: adaptive
+      MaxStatResponse: 3
+      CachePresenceCapacity: 2000
+    Server:
+      Hostname: director

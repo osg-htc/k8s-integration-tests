@@ -1,0 +1,12 @@
+# ConfigMap for the Pelican registry service config.d overlay
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: registry-config
+data:
+  50-registry.yaml: |
+    ---
+    Registry:
+      
+    Server:
+      Hostname: registry

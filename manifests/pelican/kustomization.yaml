@@ -1,0 +1,36 @@
+# Kubernetes Kustomization for the Pelican data-federation stack.
+# Translated from the upstream docker-compose configuration:
+#   https://github.com/brianaydemir/pelicanplatform-test-framework
+#
+# To apply:
+#   kubectl apply -k manifests/pelican/
+#
+# Secrets are applied separately before deploying — see util/pelican-secrets/.
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # Common (shared across all services)
+  - common/pelican-config.yaml
+
+  # Director
+  - director/config.yaml
+  - director/service.yaml
+  - director/deployment.yaml
+
+  # Registry
+  - registry/config.yaml
+  - registry/service.yaml
+  - registry/deployment.yaml
+
+  # Origin
+  - origin/config.yaml
+  - origin/pvc.yaml
+  - origin/service.yaml
+  - origin/deployment.yaml
+
+  # Cache
+  - cache/config.yaml
+  - cache/service.yaml
+  - cache/deployment.yaml

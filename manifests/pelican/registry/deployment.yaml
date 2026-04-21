@@ -1,0 +1,131 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: registry
+  labels:
+    app: registry
+    app.kubernetes.io/name: registry
+    app.kubernetes.io/part-of: pelican
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: registry
+  template:
+    metadata:
+      labels:
+        app: registry
+        app.kubernetes.io/name: registry
+        app.kubernetes.io/part-of: pelican
+    spec:
+      initContainers:
+        - name: wait-for-director
+          image: curlimages/curl:8.19.0
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for director to be ready..."
+              until curl -sk https://director:8444/api/v1.0/health > /dev/null 2>&1; do
+                echo "director not ready, retrying in 5s..."
+                sleep 5
+              done
+              echo "director is ready."
+      containers:
+        - name: registry
+          image: hub.opensciencegrid.org/pelican_platform/registry:v7.22.0
+          ports:
+            - name: https
+              containerPort: 8444
+              protocol: TCP
+          resources:
+            limits:
+              memory: 256Mi
+            requests:
+              memory: 128Mi
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - curl -sk https://localhost:8444/api/v1.0/health
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - curl -sk https://localhost:8444/api/v1.0/health
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 5
+          volumeMounts:
+            # Shared pelican.yaml
+            - name: pelican-config
+              mountPath: /etc/pelican/pelican.yaml
+              subPath: pelican.yaml
+              readOnly: true
+            # Registry-specific config.d overlay
+            - name: registry-config
+              mountPath: /etc/pelican/config.d/50-registry.yaml
+              subPath: 50-registry.yaml
+              readOnly: true
+            # TLS / CA certificates
+            - name: pelican-certs
+              mountPath: /certs/ca.crt
+              subPath: ca.crt
+              readOnly: true
+            - name: pelican-certs
+              mountPath: /certs/tls.crt
+              subPath: tls.crt
+              readOnly: true
+            - name: pelican-certs
+              mountPath: /certs/tls.key
+              subPath: tls.key
+              readOnly: true
+            # OIDC credentials
+            - name: oidc-client-id
+              mountPath: /etc/pelican/oidc-client-id
+              subPath: oidc-client-id
+              readOnly: true
+            - name: oidc-client-secret
+              mountPath: /etc/pelican/oidc-client-secret
+              subPath: oidc-client-secret
+              readOnly: true
+            # Web UI password
+            - name: server-web-passwd
+              mountPath: /etc/pelican/server-web-passwd
+              subPath: server-web-passwd
+              readOnly: true
+            # Issuer key
+            - name: registry-issuer-key
+              mountPath: /etc/pelican/issuer-keys/registry.pem
+              subPath: registry.pem
+              readOnly: true
+      volumes:
+        - name: pelican-config
+          configMap:
+            name: pelican-config
+        - name: registry-config
+          configMap:
+            name: registry-config
+        - name: pelican-certs
+          secret:
+            secretName: pelican-certs
+        - name: oidc-client-id
+          secret:
+            secretName: oidc-client-id
+        - name: oidc-client-secret
+          secret:
+            secretName: oidc-client-secret
+        - name: server-web-passwd
+          secret:
+            secretName: server-web-passwd
+        - name: registry-issuer-key
+          secret:
+            secretName: registry-issuer-key

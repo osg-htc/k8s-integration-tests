@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cache-config
+data:
+  50-cache.yaml: |
+    ---
+    Cache:
+      StorageLocation: /data
+
+    XRootD:
+      ShutdownTimeout: 0s
+      
+    Server:
+      Hostname: cache
