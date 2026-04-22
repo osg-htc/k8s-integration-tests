@@ -2,46 +2,40 @@ name: Run K8s Integration Tests
 on:
   workflow_dispatch: 
 jobs:
-  test-ospool-ep-cvmfsexec:
+  test-ospool-ep:
+    strategy:
+      matrix:
+        cvmfs_type: ['CvmfsExec', 'CvmfsBindMount']
     runs-on: ubuntu-22.04
     name: Run OSPool EP test (cvmfsexec)
     steps:
-    - name: checkout
-      uses: actions/checkout@v5
-    - name: Start minikube
-      uses: medyagh/setup-minikube@latest
-    - name: Install Go
-      uses: actions/setup-go@v6
-      with:
-        go-version: '1.26'
-    - name: 'Test OSPool EP with cvmfsexec'
-      run: go test ./test -v -run TestOSPoolEPCvmfsexec -timeout 15m
+    - name: Setup environment
+      uses: ./.github/actions/setup
+    - name: 'Test OSPool EP with ${{ matrix.cvmfs_type }}'
+      run: go test ./test -v -run TestOSPoolEP${{ matrix.cvmfs_type }} -timeout 15m
     - name: 'Upload Test Logs'
       uses: actions/upload-artifact@v4
       with:
-        name: ospool-ep-cvmfsexec
+        name: ospool-ep-${{ matrix.cvmfs_type }}
         path: /tmp/k8s-tests
         retention-days: 5
-
-      
-      
-  test-ospool-ep-bind-mount:
+  
+  test-pelican:
+    strategy:
+      matrix:
+        version: ['v7.22.0', 'v7.24.2']
     runs-on: ubuntu-22.04
-    name: Run OSPool EP tests (cvmfs bind mount)
+    name: Run Pelican tests
     steps:
-    - name: checkout
-      uses: actions/checkout@v5
-    - name: Start minikube
-      uses: medyagh/setup-minikube@latest
-    - name: Install Go
-      uses: actions/setup-go@v6
-      with:
-        go-version: '1.26'
-    - name: 'Test OSPool EP with cvmfs bind mount'
-      run: go test ./test -v -run TestOSPoolEPCvmfsBindMount -timeout 15m
+    - name: Setup environment
+      uses: ./.github/actions/setup
+    - name: 'Test Pelican version ${{ matrix.version }}'
+      env:
+        PELICAN_Tag: ${{ matrix.version }}
+      run: go test ./test -v -run TestPelican -timeout 15m
     - name: 'Upload Test Logs'
       uses: actions/upload-artifact@v4
       with:
-        name: ospool-ep-cvmfs-bind
+        name: pelican-${{ matrix.version }}
         path: /tmp/k8s-tests
         retention-days: 5
