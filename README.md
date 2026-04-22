@@ -16,31 +16,33 @@ Each test suite creates a randomly-named namespace, applies a Kustomize manifest
 
 ## Repository Structure
 
-```
-k8s-integration-tests/
-├── .github/
-│   └── workflows/
-│       └── run-tests.yaml       # GitHub Actions CI workflow
-├── manifests/
-│   └── ospool-ep/               # Kubernetes manifests for the OSPool EP test suite
-│       ├── kustomization.yaml   # Kustomize entry point, lists all resources
-│       ├── central-manager.yaml # HTCondor Central Manager Deployment + Service
-│       ├── ospool-ep.yaml       # OSPool Execution Point Deployment
-│       └── pool-password.yaml   # ConfigMap and Secret for pool auth credentials
-├── test/
-│   ├── test_utils.go            # Shared test helper functions
-│   └── ospool_ep_test.go        # Test suite for the OSPool Execution Point
-├── go.mod
-└── go.sum
-```
-
 ### `manifests/`
 
 Each subdirectory corresponds to a single test suite and contains all Kubernetes resources needed to run it, grouped into a [Kustomize](https://kustomize.io/) bundle. See `manifests/ospool-ep/` as an example.
 
+### `data/`
+
+Static test data files that are mounted into the cluster during test runs. For example, `data/pelican/` contains files served by the Pelican origin pod.
+
 ### `test/`
 
 All Go test code lives here in a single `test` package. `test_utils.go` contains shared helpers for common polling and introspection patterns. Individual test suites each get their own `*_test.go` file.
+
+---
+
+## Test Environment Construction
+
+Each test follows the same lifecycle, illustrated by `test/pelican_test.go`:
+
+1. **Mount host data into minikube** — directories from `data/` on the host are bind-mounted into the minikube VM so that pods can access static test files.
+
+2. **Generate credentials** — secrets for test services (TLS certificates, signing keys, passwords, etc.) are created programmatically via bespoke helper code and applied to the test namespace.
+
+3. **Template and apply Kustomize manifests** — a Go template is applied to the relevant `manifests/` directory to produce a filled-in kustomize directory, which is then deployed with `kubectl apply -k`.
+
+4. **Register teardown via `t.Cleanup`** — a cleanup function is registered immediately after setup. It dumps pod logs, deletes all created secrets and kustomized resources, removes the namespace, and cancels any background context (e.g. the bind mount).
+
+5. **Run sub-tests** — the actual assertions are run as `t.Run` sub-tests. If a foundational sub-test (such as confirming all deployments become ready) fails, subsequent sub-tests are skipped early via an `if t.Failed()` guard.
 
 ---
 
