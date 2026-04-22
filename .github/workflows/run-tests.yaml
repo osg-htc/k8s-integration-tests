@@ -14,8 +14,9 @@ jobs:
     - name: Setup environment
       uses: ./.github/actions/setup
     - name: 'Test OSPool EP with ${{ matrix.cvmfs_type }}'
-      run: go test ./test -v -run TestOSPoolEP${{ matrix.cvmfs_type }} -timeout 15m
+      run: go test ./test -v -count 1 -run TestOSPoolEP${{ matrix.cvmfs_type }} -timeout 15m
     - name: 'Upload Test Logs'
+      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: ospool-ep-${{ matrix.cvmfs_type }}
@@ -40,9 +41,10 @@ jobs:
     - name: 'Test Pelican version ${{ matrix.version }}'
       env:
         PELICAN_Tag: ${{ matrix.version }}
-      run: go test ./test -v -run TestPelican -timeout 15m
+      run: go test ./test -v -count 1 -run TestPelican -timeout 15m
     - name: 'Upload Test Logs'
       uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: pelican-${{ matrix.version }}
         path: /tmp/k8s-tests
