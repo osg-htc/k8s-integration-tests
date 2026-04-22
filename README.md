@@ -46,6 +46,17 @@ Each test follows the same lifecycle, illustrated by `test/pelican_test.go`:
 
 ---
 
+## CI / Automated Testing
+
+Tests are run automatically via GitHub Actions, defined in `.github/workflows/run-tests.yaml`. The workflow runs:
+
+- **On a nightly schedule** — automatically triggered once per day.
+- **On demand** — can be triggered manually via the `workflow_dispatch` event in the GitHub Actions UI.
+
+Each test suite has its own job in the workflow. After each job completes (whether passing or failing), test logs and pod events are uploaded as **artifacts** via `actions/upload-artifact` and are accessible from the GitHub Actions run summary page. Artifacts are retained for 5 days.
+
+---
+
 ## Running Tests Locally
 
 Run all tests:
