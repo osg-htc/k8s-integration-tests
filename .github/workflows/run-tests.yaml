@@ -1,6 +1,8 @@
 name: Run K8s Integration Tests
 on:
   workflow_dispatch: 
+  schedule:
+    - cron: '0 0 * * *'  # runs every day at midnight UTC
 jobs:
   test-ospool-ep:
     strategy:
