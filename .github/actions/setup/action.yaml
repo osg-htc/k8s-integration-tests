@@ -3,8 +3,6 @@ description: 'Checkout, start minikube, and install Go'
 runs:
   using: composite
   steps:
-    - name: Checkout
-      uses: actions/checkout@v5
     - name: Start minikube
       uses: medyagh/setup-minikube@latest
     - name: Install Go
