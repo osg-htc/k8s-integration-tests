@@ -49,6 +49,12 @@ func nonEmpty(s string) bool {
 	return len(s) > 0
 }
 
+// zeroExitCode returns true as long as the command exits with code 0, regardless
+// of its output
+func zeroExitCode(_ string) bool {
+	return true
+}
+
 // waitUntilDeploymentsReady waits for each listed deployment to enter the "Ready" state.
 // Fail the test if one or more deployments are not ready within the timeout.
 func (th *TestHandle) waitUntilDeploymentsReady(deployments []string, retries Retry) {

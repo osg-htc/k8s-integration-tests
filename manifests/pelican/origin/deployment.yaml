@@ -141,5 +141,5 @@ spec:
           secret:
             secretName: origin-issuer-key
         - name: origin-data
-          persistentVolumeClaim:
-            claimName: origin-data
+          hostPath: 
+            path: /data

@@ -20,14 +20,17 @@ spec:
     spec:
       containers:
         - name: dev
-          image: hub.opensciencegrid.org/pelican_platform/pelican-dev:latest-itb
-          command: ["tini", "--", "/bin/sleep", "infinity"]
+          image: hub.opensciencegrid.org/osgpreview/pelican-alpine:v7.22.0
+          command: ["/bin/sleep", "infinity"]
           volumeMounts:
             # pelican.yaml — shared config
             - name: pelican-config
               mountPath: /etc/pelican/pelican.yaml
               subPath: pelican.yaml
               readOnly: true
+            # extra pelican config - empty in this case
+            - name: pelican-extra-config
+              mountPath: /etc/pelican/config.d/
             # TLS / CA certificates
             - name: pelican-certs
               mountPath: /certs/ca.crt
@@ -59,6 +62,8 @@ spec:
         - name: pelican-config
           configMap:
             name: pelican-config
+        - name: pelican-extra-config
+          emptyDir: 
         - name: pelican-certs
           secret:
             secretName: pelican-certs
