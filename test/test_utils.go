@@ -182,7 +182,7 @@ func (th *TestHandle) dumpPodInformation(logDir string) {
 	for _, pod := range pods {
 		err := th.dumpPodLogs(pod.Name, logDir)
 		if err != nil {
-			th.T.Logf("Unable to export logs for pod %v: %v", pod, err)
+			th.T.Logf("Unable to export logs for pod %v: %v", pod.Name, err)
 		}
 	}
 
