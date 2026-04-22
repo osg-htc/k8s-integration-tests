@@ -7,7 +7,7 @@ jobs:
       matrix:
         cvmfs_type: ['CvmfsExec', 'CvmfsBindMount']
     runs-on: ubuntu-22.04
-    name: Run OSPool EP test (cvmfsexec)
+    name: Run OSPool EP test
     steps:
     - name: Checkout
       uses: actions/checkout@v5
@@ -33,6 +33,10 @@ jobs:
       uses: actions/checkout@v5
     - name: Setup environment
       uses: ./.github/actions/setup
+    - name: Install Pelican CLI
+      run: |
+          wget https://dl.pelicanplatform.org/7.24.2/pelican_7.24.2-1_amd64.deb
+          sudo dpkg -i pelican_7.24.2-1_amd64.deb
     - name: 'Test Pelican version ${{ matrix.version }}'
       env:
         PELICAN_Tag: ${{ matrix.version }}
