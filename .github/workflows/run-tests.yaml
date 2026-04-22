@@ -7,7 +7,7 @@ jobs:
   test-ospool-ep:
     strategy:
       matrix:
-        cvmfs_type: ['CvmfsExec', 'CvmfsBindMount']
+        cvmfs_type: ['Cvmfsexec', 'CvmfsBindMount']
     runs-on: ubuntu-22.04
     name: Run OSPool EP test
     steps:
