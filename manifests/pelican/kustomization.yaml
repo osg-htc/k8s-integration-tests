@@ -13,6 +13,7 @@ kind: Kustomization
 resources:
   # Common (shared across all services)
   - common/pelican-config.yaml
+  - common/wait-for-url.yaml
 
   # Director
   - director/config.yaml
@@ -34,3 +35,6 @@ resources:
   - cache/config.yaml
   - cache/service.yaml
   - cache/deployment.yaml
+
+  # Dev
+  - dev/deployment.yaml

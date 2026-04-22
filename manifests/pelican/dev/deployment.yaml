@@ -1,0 +1,73 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dev
+  labels:
+    app.kubernetes.io/name: dev
+    app.kubernetes.io/part-of: pelican
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: dev
+      app.kubernetes.io/part-of: pelican
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: dev
+        app.kubernetes.io/part-of: pelican
+    spec:
+      containers:
+        - name: dev
+          image: hub.opensciencegrid.org/pelican_platform/pelican-dev:latest-itb
+          command: ["tini", "--", "/bin/sleep", "infinity"]
+          volumeMounts:
+            # pelican.yaml — shared config
+            - name: pelican-config
+              mountPath: /etc/pelican/pelican.yaml
+              subPath: pelican.yaml
+              readOnly: true
+            # TLS / CA certificates
+            - name: pelican-certs
+              mountPath: /certs/ca.crt
+              subPath: ca.crt
+              readOnly: true
+            - name: pelican-certs
+              mountPath: /certs/tls.crt
+              subPath: tls.crt
+              readOnly: true
+            - name: pelican-certs
+              mountPath: /certs/tls.key
+              subPath: tls.key
+              readOnly: true
+            # OIDC credentials
+            - name: oidc-client-id
+              mountPath: /etc/pelican/oidc-client-id
+              subPath: oidc-client-id
+              readOnly: true
+            - name: oidc-client-secret
+              mountPath: /etc/pelican/oidc-client-secret
+              subPath: oidc-client-secret
+              readOnly: true
+            # Web UI password
+            - name: server-web-passwd
+              mountPath: /etc/pelican/server-web-passwd
+              subPath: server-web-passwd
+              readOnly: true
+      volumes:
+        - name: pelican-config
+          configMap:
+            name: pelican-config
+        - name: pelican-certs
+          secret:
+            secretName: pelican-certs
+        - name: oidc-client-id
+          secret:
+            secretName: oidc-client-id
+        - name: oidc-client-secret
+          secret:
+            secretName: oidc-client-secret
+        - name: server-web-passwd
+          secret:
+            secretName: server-web-passwd

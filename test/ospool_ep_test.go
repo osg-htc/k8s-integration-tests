@@ -2,25 +2,15 @@ package test
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 
 	"github.com/stretchr/testify/require"
 )
-
-// TWO_MINUTES is the default retry configuration for polling tests
-var TWO_MINUTES = Retry{12, 10 * time.Second}
-
-// SIX_MINUTES is a longer timeout for tests that take a long time such as CVMFS tests
-var SIX_MINUTES = Retry{12, 30 * time.Second}
-
-var LOG_ROOT = "/tmp/k8s-tests"
 
 // Check that condor_status run against the CM lists the EP
 func subtestCondorStatus(th TestHandle) {
@@ -68,11 +58,8 @@ func runOSPoolEPTests(t *testing.T, kustomizeDir string) {
 	k8s.KubectlApplyFromKustomize(t, options, resourcePath)
 
 	// Create a directory for log output
-	logDir := filepath.Join(LOG_ROOT, filepath.Base(kustomizeDir))
-	err = os.MkdirAll(logDir, 0755)
-	if err != nil {
-		t.Logf("Warning: Unable to create log directory %v", logDir)
-	}
+	logDir := th.makeLogDir(kustomizeDir)
+
 	// defer deleting the k8s resources created for the test
 	t.Cleanup(func() {
 		th.dumpPodInformation(logDir)

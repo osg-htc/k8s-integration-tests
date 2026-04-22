@@ -16,6 +16,15 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// LOG_ROOT is the top level logging directory for dumping test results
+var LOG_ROOT = "/tmp/k8s-tests"
+
+// TWO_MINUTES is the default retry configuration for polling tests
+var TWO_MINUTES = Retry{12, 10 * time.Second}
+
+// SIX_MINUTES is a longer timeout for tests that take a longer time
+var SIX_MINUTES = Retry{12, 30 * time.Second}
+
 // Wrapper for common args passed to every test function
 type TestHandle struct {
 	*testing.T
@@ -169,4 +178,13 @@ func (th *TestHandle) dumpPodInformation(logDir string) {
 		}
 		th.T.Logf("---\nEvents for pod %v:\n%v\n---", pod.Name, events)
 	}
+}
+
+func (th *TestHandle) makeLogDir(kustomizeDir string) string {
+	logDir := filepath.Join(LOG_ROOT, filepath.Base(kustomizeDir))
+	err := os.MkdirAll(logDir, 0755)
+	if err != nil {
+		th.T.Fatalf("Warning: Unable to create log directory %v for storing test results. Failing.", logDir)
+	}
+	return logDir
 }

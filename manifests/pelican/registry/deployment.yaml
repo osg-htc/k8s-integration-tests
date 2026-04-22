@@ -22,16 +22,13 @@ spec:
       initContainers:
         - name: wait-for-director
           image: curlimages/curl:8.19.0
-          command:
-            - sh
-            - -c
-            - |
-              echo "Waiting for director to be ready..."
-              until curl -sk https://director:8444/api/v1.0/health > /dev/null 2>&1; do
-                echo "director not ready, retrying in 5s..."
-                sleep 5
-              done
-              echo "director is ready."
+          command: ["sh", "/scripts/wait-for-url.sh"]
+          env:
+            - name: WAIT_URLS
+              value: https://director:8444/api/v1.0/health
+          volumeMounts:
+            - name: wait-for-url
+              mountPath: /scripts
       containers:
         - name: registry
           image: hub.opensciencegrid.org/pelican_platform/registry:v7.22.0
@@ -108,6 +105,9 @@ spec:
               subPath: registry.pem
               readOnly: true
       volumes:
+        - name: wait-for-url
+          configMap:
+            name: wait-for-url
         - name: pelican-config
           configMap:
             name: pelican-config

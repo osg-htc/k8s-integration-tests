@@ -1,8 +1,6 @@
 package test
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -16,11 +14,7 @@ func TestPelican(t *testing.T) {
 	th := TestHandle{t, options}
 
 	kustomizeDir := "../manifests/pelican"
-	logDir := filepath.Join(LOG_ROOT, filepath.Base(kustomizeDir))
-	err := os.MkdirAll(logDir, 0755)
-	if err != nil {
-		t.Logf("Warning: Unable to create log directory %v", logDir)
-	}
+	logDir := th.makeLogDir(kustomizeDir)
 
 	// create k8s namespaces for the test
 	k8s.CreateNamespace(t, options, namespace)

@@ -24,30 +24,15 @@ spec:
         app.kubernetes.io/part-of: pelican
     spec:
       initContainers:
-        - name: wait-for-director
+        - name: wait-for-dependencies
           image: curlimages/curl:8.19.0
-          command:
-            - sh
-            - -c
-            - |
-              echo "Waiting for director to be ready..."
-              until curl -sk https://director:8444/api/v1.0/health; do
-                echo "director not ready, retrying in 5s..."
-                sleep 5
-              done
-              echo "director is ready."
-        - name: wait-for-registry
-          image: curlimages/curl:8.19.0
-          command:
-            - sh
-            - -c
-            - |
-              echo "Waiting for registry to be ready..."
-              until curl -sk https://registry:8444/api/v1.0/health; do
-                echo "registry not ready, retrying in 5s..."
-                sleep 5
-              done
-              echo "registry is ready."
+          command: ["sh", "/scripts/wait-for-url.sh"]
+          env:
+            - name: WAIT_URLS
+              value: https://director:8444/api/v1.0/health,https://registry:8444/api/v1.0/health
+          volumeMounts:
+            - name: wait-for-url
+              mountPath: /scripts
       containers:
         - name: origin
           image: hub.opensciencegrid.org/pelican_platform/origin:v7.22.0
@@ -131,6 +116,9 @@ spec:
             - name: origin-data
               mountPath: /data
       volumes:
+        - name: wait-for-url
+          configMap:
+            name: wait-for-url
         - name: pelican-config
           configMap:
             name: pelican-config
