@@ -1,7 +1,9 @@
 package test
 
 import (
+	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -40,6 +42,19 @@ func subtestHasCVMFS(th TestHandle) {
 	th.waitUntilPodExecSucceeds(cmPod, "", cmd, SIX_MINUTES, truthy)
 }
 
+func mkCvmfsMountDir(t *testing.T) string {
+	// Volume-mount the relevant host paths into the test Minikube instance
+	cvmfsDir, err := os.MkdirTemp("/tmp", "k8s-cvmfs-*")
+	if err != nil {
+		t.Fatal("Unable to create tmpdir for CMVFS bind-mount")
+	}
+	err = os.Chmod(cvmfsDir, 0775)
+	if err != nil {
+		t.Fatal("Unable to set permissons on CMVFS bind-mount dir")
+	}
+	return cvmfsDir
+}
+
 // runOSPoolEPTests runs the set of OSPool EP tests against the EP configuration defined
 // in the given kustomizeDir
 func runOSPoolEPTests(t *testing.T, kustomizeDir string) {
@@ -52,6 +67,12 @@ func runOSPoolEPTests(t *testing.T, kustomizeDir string) {
 
 	// create k8s namespaces for the test
 	k8s.CreateNamespace(t, options, namespace)
+
+	// Volume-mount the relevant host paths into the test Minikube instance
+	ctx, cancelCtx := context.WithCancel(context.Background())
+	cvmfsDir := mkCvmfsMountDir(t)
+	th.minikubeBindMount(ctx, cvmfsDir, "/var/lib/cvmfs-k8s")
+
 	// create the required credentials for cross-container communication in the test
 	tokenData := th.generatePoolPasswordAndIDToken("test-cm", "condor@test-cm", "pool-token")
 	// create k8s resources for the test
@@ -63,9 +84,11 @@ func runOSPoolEPTests(t *testing.T, kustomizeDir string) {
 	// defer deleting the k8s resources created for the test
 	t.Cleanup(func() {
 		th.dumpPodInformation(logDir)
+		cancelCtx()
 		k8s.DeleteNamespace(t, options, namespace)
 		th.deletePoolPasswordAndIDToken(tokenData)
 		k8s.KubectlDeleteFromKustomize(t, options, resourcePath)
+		os.RemoveAll(cvmfsDir)
 	})
 
 	t.Run("Confirm deployments become ready.", func(t *testing.T) {

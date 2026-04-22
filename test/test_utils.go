@@ -1,8 +1,10 @@
 package test
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -187,4 +189,15 @@ func (th *TestHandle) makeLogDir(kustomizeDir string) string {
 		th.T.Fatalf("Warning: Unable to create log directory %v for storing test results. Failing.", logDir)
 	}
 	return logDir
+}
+
+// minikubeBindMount forks a `minikube mount` process to the given hostDir
+// to enable access to files on the host from inside the cluster
+func (th *TestHandle) minikubeBindMount(ctx context.Context, hostDir string, destDir string) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, "minikube", "mount", fmt.Sprintf("%v:%v", hostDir, destDir))
+	err := cmd.Start()
+	if err != nil {
+		th.T.Fatalf("Unable to start a minikube bindmount from %v to %v. Failing", hostDir, destDir)
+	}
+	return cmd
 }

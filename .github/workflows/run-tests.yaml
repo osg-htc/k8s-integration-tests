@@ -37,11 +37,6 @@ jobs:
       uses: actions/setup-go@v6
       with:
         go-version: '1.26'
-    - name: Bind-Mount CVMFS target dir into Minikube
-      run: |
-          sudo mkdir -p  /var/lib/cvmfs-k8s
-          sudo chmod 777 /var/lib/cvmfs-k8s
-          minikube mount /var/lib/cvmfs-k8s:/var/lib/cvmfs-k8s &
     - name: 'Test OSPool EP with cvmfs bind mount'
       run: go test ./test -v -run TestOSPoolEPCvmfsBindMount -timeout 15m
     - name: 'Upload Test Logs'
