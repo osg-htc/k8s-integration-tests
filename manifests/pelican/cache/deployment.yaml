@@ -35,7 +35,7 @@ spec:
               mountPath: /scripts
       containers:
         - name: cache
-          image: hub.opensciencegrid.org/pelican_platform/cache:v7.22.0
+          image: hub.opensciencegrid.org/pelican_platform/cache:{{ .Tag }}
           ports:
             - name: https
               containerPort: 8444

@@ -31,7 +31,7 @@ spec:
               mountPath: /scripts
       containers:
         - name: registry
-          image: hub.opensciencegrid.org/pelican_platform/registry:v7.22.0
+          image: hub.opensciencegrid.org/pelican_platform/registry:{{ .Tag }}
           ports:
             - name: https
               containerPort: 8444

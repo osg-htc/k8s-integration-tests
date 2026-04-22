@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: director
-          image: hub.opensciencegrid.org/pelican_platform/director:v7.22.0
+          image: hub.opensciencegrid.org/pelican_platform/director:{{ .Tag }}
           ports:
             - name: https
               containerPort: 8444

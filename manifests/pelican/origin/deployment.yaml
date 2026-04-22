@@ -35,7 +35,7 @@ spec:
               mountPath: /scripts
       containers:
         - name: origin
-          image: hub.opensciencegrid.org/pelican_platform/origin:v7.22.0
+          image: hub.opensciencegrid.org/pelican_platform/origin:{{ .Tag }}
           ports:
             - name: https
               containerPort: 8444

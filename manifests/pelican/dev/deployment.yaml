@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: dev
-          image: hub.opensciencegrid.org/osgpreview/pelican-alpine:v7.22.0
+          image: hub.opensciencegrid.org/osgpreview/pelican-alpine:{{ .Tag }}
           command: ["/bin/sleep", "infinity"]
           volumeMounts:
             # pelican.yaml — shared config
