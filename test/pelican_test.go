@@ -20,7 +20,7 @@ type pelicanFormatArgs struct {
 }
 
 var defaultPelicanFormatArgs pelicanFormatArgs = pelicanFormatArgs{
-	Tag: "v7.22.0",
+	Tag: "v7.26.0",
 }
 
 // PelicanTestContext holds all setup components needed to run the Pelican tests, and provides a convenient way to pass them around
@@ -32,15 +32,6 @@ type PelicanTestContext struct {
 	formattedKustomizeDir string
 	namespace             string
 	kubectlOptions        *k8s.KubectlOptions
-}
-
-// subtestGetDataFromOrigin checks that the Pelican CLI tools in the dev pod
-// can fetch data from the origin pod
-func subtestGetDataFromOrigin(th TestHandle) {
-	devPod := th.getPodNameByLabel("app.kubernetes.io/name=dev")
-	// Check that condor_status filtered on the EP's name returns a non-empty string
-	cmd := "pelican object get pelican://director:8444/public/data/0.0 /dev/null"
-	th.waitUntilPodExecSucceedsSlice(devPod, "", strings.Split(cmd, " "), TWO_MINUTES, zeroExitCode)
 }
 
 func setupPelicanTestSpace(t *testing.T) *PelicanTestContext {
@@ -125,8 +116,5 @@ func TestPelican(t *testing.T) {
 	}
 
 	// Second test: Run a basic pelican object get
-	t.Run("Confirm public `pelican object get` succeeds", func(t *testing.T) {
-		subtestGetDataFromOrigin(testContext.TestHandle)
-	})
-
+	testContext.RunTestConfigDir("../test-configs/pelican")
 }

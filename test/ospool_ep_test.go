@@ -2,7 +2,6 @@ package test
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -21,34 +20,6 @@ var defaultOSPoolEPFormatArgs = ospoolEPFormatArgs{
 	OSPoolEPTag: "25-release",
 	CMTag:       "25.0-el9",
 	CvmfsType:   "cvmfsexec",
-}
-
-// Check that condor_status run against the CM lists the EP
-func subtestCondorStatus(th TestHandle) {
-	cmPod := th.getPodNameByLabel("app=test-cm")
-	epPod := th.getPodNameByLabel("app=ospool-ep")
-	// Check that condor_status filtered on the EP's name returns a non-empty string
-	cmd := fmt.Sprintf(`condor_status -const 'regexp("%v",Machine)'`, epPod)
-	th.waitUntilPodExecSucceeds(cmPod, "", cmd, TWO_MINUTES, nonEmpty)
-}
-
-// Check that the EP advertises that it can run Apptainer
-func subtestHasSingularity(th TestHandle) {
-	cmPod := th.getPodNameByLabel("app=test-cm")
-	epPod := th.getPodNameByLabel("app=ospool-ep")
-	// Check that condor_status filtered on the EP's name returns a non-empty string
-	cmd := fmt.Sprintf(`condor_status -const 'regexp("%v",Machine)' -af HAS_SINGULARITY`, epPod)
-	th.waitUntilPodExecSucceeds(cmPod, "", cmd, TWO_MINUTES, truthy)
-}
-
-// Check that the EP advertises the two test CVMFS repos
-func subtestHasCVMFS(th TestHandle) {
-	cmPod := th.getPodNameByLabel("app=test-cm")
-	epPod := th.getPodNameByLabel("app=ospool-ep")
-
-	cvmfsAd := "HAS_CVMFS_singularity_opensciencegrid_org"
-	cmd := fmt.Sprintf(`condor_status -const 'regexp("%v",Machine)' -af %v`, epPod, cvmfsAd)
-	th.waitUntilPodExecSucceeds(cmPod, "", cmd, SIX_MINUTES, truthy)
 }
 
 func mkCvmfsMountDir(t *testing.T) string {
@@ -116,19 +87,5 @@ func TestOSPoolEP(t *testing.T) {
 		return
 	}
 
-	t.Run("Confirm condor_status lists the EP.", func(t *testing.T) {
-		t.Parallel()
-		subtestCondorStatus(TestHandle{t, options})
-	})
-
-	t.Run("Confirm EP container advertises singularity.", func(t *testing.T) {
-		t.Parallel()
-		subtestHasSingularity(TestHandle{t, options})
-	})
-
-	t.Run("Confirm EP container advertises CVMFS", func(t *testing.T) {
-		t.Parallel()
-		subtestHasCVMFS(TestHandle{t, options})
-	})
-
+	th.RunTestConfigDir("../test-configs/ospool-ep")
 }

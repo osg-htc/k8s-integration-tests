@@ -28,6 +28,10 @@ Static test data files that are mounted into the cluster during test runs. For e
 
 All Go test code lives here in a single `test` package. `test_utils.go` contains shared helpers for common polling and introspection patterns. Individual test suites each get their own `*_test.go` file.
 
+### `test-configs/`
+
+Declarative, YAML-driven checks that don't need bespoke Go code — see [Scripted Tests](#scripted-tests) below.
+
 ---
 
 ## Test Environment Construction
@@ -43,6 +47,37 @@ Each test follows the same lifecycle, illustrated by `test/pelican_test.go`:
 4. **Register teardown via `t.Cleanup`** — a cleanup function is registered immediately after setup. It dumps pod logs, deletes all created secrets and kustomized resources, removes the namespace, and cancels any background context (e.g. the bind mount).
 
 5. **Run sub-tests** — the actual assertions are run as `t.Run` sub-tests. If a foundational sub-test (such as confirming all deployments become ready) fails, subsequent sub-tests are skipped early via an `if t.Failed()` guard.
+
+---
+
+## Scripted Tests
+
+For pod-exec checks of the form "poll a pod until some command succeeds," it's often simpler to describe the check as data than to write bespoke Go. `test/test_config_parser.go` provides `TestHandle.RunTestConfigDir(configDir)`, which reads a `testConfig.yaml` file from `configDir` and runs each entry under its `tests:` list as a subtest.
+
+Each entry supports:
+
+- `name` — the subtest's name.
+- `podSelector.labels` — a map of labels identifying the target pod (must match exactly one pod).
+- `script` — a path, relative to `configDir`, to a script that is `kubectl cp`'d into the pod, `chmod +x`'d, then executed via `sh -c` until it exits `0`.
+- `command` — a list of strings exec'd directly, with no shell and no file copy. Use this for containers (e.g. distroless images) that don't have a shell. `script` and `command` are mutually exclusive — specifying both fails the test.
+- `container` — optional; targets a specific container in a multi-container pod for the copy, chmod, and exec steps.
+- `retry.timeout` / `retry.wait` — how long (in seconds) to keep retrying, and how long to sleep between attempts.
+
+Example, from `test-configs/ospool-ep/testConfig.yaml`:
+
+```yaml
+tests:
+- name: Has Singularity
+  podSelector:
+    labels:
+      app: test-cm
+  script: has_singularity.sh
+  retry:
+    timeout: 120
+    wait: 10
+```
+
+See `test-configs/ospool-ep/` and `test-configs/pelican/` for complete examples, and `test/ospool_ep_test.go` / `test/pelican_test.go` for how `RunTestConfigDir` is wired into a test suite.
 
 ---
 
@@ -81,6 +116,6 @@ go test ./test -v -run TestPelican
 
 1. **Add a manifest directory** under `manifests/my-service/` containing your Kubernetes resources and a `kustomization.yaml` that lists them. See `manifests/ospool-ep/` for an example.
 
-2. **Add a test file** at `test/my_service_test.go`. See `test/ospool_ep_test.go` for the standard structure — namespace creation, deferred cleanup, kustomize apply, and sub-tests. Shared helpers in `test_utils.go` can be used directly; add new ones there if the pattern will be reused.
+2. **Add a test file** at `test/my_service_test.go`. See `test/ospool_ep_test.go` for the standard structure — namespace creation, deferred cleanup, kustomize apply, and sub-tests. Shared helpers in `test_utils.go` can be used directly; add new ones there if the pattern will be reused. For pod-exec checks, prefer adding a `test-configs/my-service/testConfig.yaml` and calling `RunTestConfigDir` over writing a bespoke sub-test — see [Scripted Tests](#scripted-tests).
 
 3. **Add a CI job** to `.github/workflows/run-tests.yaml` following the existing `test-ospool-ep` job as a template, updating the `run` step to target your new test function.

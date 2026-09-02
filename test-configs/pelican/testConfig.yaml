@@ -1,0 +1,10 @@
+tests:
+# Confirm that the Pelican CLI tools in the dev pod can fetch data from the origin
+- name: Confirm public `pelican object get` succeeds
+  podSelector:
+    labels:
+      app.kubernetes.io/name: dev
+  command: ["pelican", "object", "get", "pelican://director:8444/public/data/0.0", "/dev/null"]
+  retry:
+    timeout: 120
+    wait: 10

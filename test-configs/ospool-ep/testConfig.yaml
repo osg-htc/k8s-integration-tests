@@ -1,0 +1,30 @@
+tests:
+# Initial sanity check - confirm that the EP shows up in the test CM's collector
+- name: Confirm condor_status lists the EP
+  podSelector:
+    labels:
+      app: test-cm
+  script: condor_status.sh
+  retry:
+    timeout: 120
+    wait: 10
+
+# Confirm that the EP advertises Singularity
+- name: Confirm EP container advertises singularity
+  podSelector:
+    labels:
+      app: test-cm
+  script: has_singularity.sh
+  retry:
+    timeout: 120
+    wait: 10
+
+# Confirm that the EP advertises CVMFS
+- name: Confirm EP container advertises CVMFS
+  podSelector:
+    labels:
+      app: test-cm
+  script: has_cvmfs.sh
+  retry:
+    timeout: 300
+    wait: 30
