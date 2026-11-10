@@ -1,0 +1,12 @@
+# SEBackendType (elasticsearch or opensearch) selects which family-specific
+# deployment manifest to include.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - service.yaml
+{{- if eq .SEBackendType "elasticsearch" }}
+  - deployment-es.yaml
+{{- else }}
+  - deployment-os.yaml
+{{- end }}

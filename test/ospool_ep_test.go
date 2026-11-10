@@ -58,7 +58,8 @@ func TestOSPoolEP(t *testing.T) {
 	th.minikubeBindMount(ctx, cvmfsDir, "/var/lib/cvmfs-k8s")
 
 	// create the required credentials for cross-container communication in the test
-	tokenData := th.generatePoolPasswordAndIDToken("test-cm", "condor@test-cm", "pool-token")
+	tokenData := th.generatePoolPasswordAndIDToken("test-cm", "condor@test-cm", "pool-token",
+		[]string{"READ", "ADVERTISE_STARTD", "ADVERTISE_MASTER"})
 
 	// Template the kustomize dir
 	th.fillTemplateStructFromEnv(&defaultOSPoolEPFormatArgs, "OSPOOL_EP_")

@@ -1,0 +1,23 @@
+---
+# HTCondor configuration for the test access point, enabling IDTOKENS
+# authentication so the test-runner pod can submit and query jobs.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: condor-config-local
+data:
+  99-testing.conf: |
+    # Bind to all interfaces so other pods can reach us
+    BIND_ALL_INTERFACES = TRUE
+
+    # Use IDTOKENS auth for the test-runner; FS auth for local commands
+    SEC_DEFAULT_AUTHENTICATION = REQUIRED
+    SEC_DEFAULT_AUTHENTICATION_METHODS = IDTOKENS, FS
+    SEC_DEFAULT_INTEGRITY = OPTIONAL
+    SEC_DEFAULT_ENCRYPTION = NEVER
+
+    # Allow anyone on the cluster network to read and write
+    ALLOW_READ = *
+    ALLOW_WRITE = *
+    ALLOW_NEGOTIATOR = *
+    ALLOW_ADMINISTRATOR = $(CONDOR_HOST), $(IP_ADDRESS)

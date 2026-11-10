@@ -13,8 +13,12 @@ jobs:
     uses: ./.github/workflows/test-pelican.yaml
     secrets: inherit
 
+  adstash:
+    if: github.event_name != 'schedule' || github.repository_owner == 'osg-htc'
+    uses: ./.github/workflows/test-adstash.yaml
+
   notify:
-    needs: [ospool-ep, pelican]
+    needs: [ospool-ep, pelican, adstash]
     if: always() && (github.event_name != 'schedule' || github.repository_owner == 'osg-htc')
     runs-on: ubuntu-latest
     steps:

@@ -1,0 +1,58 @@
+---
+# A single-node HTCondor access point (schedd, collector, and negotiator)
+# for the adstash test suite. The runner pod submits and queries jobs against
+# this schedd remotely.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: condor
+  labels:
+    app: condor
+    app.kubernetes.io/name: condor
+    app.kubernetes.io/part-of: adstash
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: condor
+  template:
+    metadata:
+      labels:
+        app: condor
+        app.kubernetes.io/name: condor
+        app.kubernetes.io/part-of: adstash
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: condor
+          image: htcondor/mini:{{ .CondorTag }}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: _CONDOR_TRUST_DOMAIN
+              value: condor
+          ports:
+            - name: shared-port
+              containerPort: 9618
+              protocol: TCP
+          readinessProbe:
+            exec:
+              command: ["condor_status", "-schedd"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 12
+          volumeMounts:
+            - name: condor-config-local
+              mountPath: /etc/condor/config.d/99-testing.conf
+              subPath: 99-testing.conf
+              readOnly: true
+            - name: pool-passwd
+              mountPath: /etc/condor/passwords.d/POOL
+              subPath: POOL
+      volumes:
+        - name: condor-config-local
+          configMap:
+            name: condor-config-local
+        - name: pool-passwd
+          secret:
+            secretName: pool-passwd
+            defaultMode: 0600

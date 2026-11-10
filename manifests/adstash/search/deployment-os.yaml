@@ -1,0 +1,80 @@
+---
+# OpenSearch deployment for the adstash test suite. DBMajorTag (the
+# OpenSearch major version, e.g. 2/3) selects whether
+# plugins.index_state_management.enabled is set (removed as of major version 3).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: search
+  labels:
+    app: search
+    app.kubernetes.io/name: search
+    app.kubernetes.io/part-of: adstash
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: search
+  template:
+    metadata:
+      labels:
+        app: search
+        app.kubernetes.io/name: search
+        app.kubernetes.io/part-of: adstash
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: search
+          image: opensearchproject/opensearch:{{ .DBTag }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 9200
+              protocol: TCP
+          env:
+            - name: discovery.type
+              value: single-node
+            - name: cluster.routing.allocation.disk.threshold_enabled
+              value: "false"
+            - name: action.destructive_requires_name
+              value: "false"
+{{- if eq .DBMajorTag "2" }}
+            - name: plugins.index_state_management.enabled
+              value: "false"
+{{- end }}
+            - name: plugins.index_state_management.history.enabled
+              value: "false"
+            - name: plugins.anomaly_detection.enabled
+              value: "false"
+            - name: plugins.alerting.alert_history_enabled
+              value: "false"
+            - name: DISABLE_SECURITY_PLUGIN
+              value: "true"
+            - name: DISABLE_INSTALL_DEMO_CONFIG
+              value: "true"
+            - name: DISABLE_PERFORMANCE_ANALYZER_AGENT_CLI
+              value: "true"
+            - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
+              value: "NotUsed_SecurityDisabled1!"
+            - name: OPENSEARCH_JAVA_OPTS
+              value: "-Xms512m -Xmx512m"
+          resources:
+            limits:
+              memory: 1Gi
+            requests:
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /_cluster/health
+              port: 9200
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 12
+          volumeMounts:
+            - name: search-data
+              mountPath: /usr/share/opensearch/data
+      volumes:
+        # RAM-backed data directory.
+        - name: search-data
+          emptyDir:
+            medium: Memory

@@ -1,0 +1,13 @@
+# Kubernetes manifests for the condor_adstash integration test suite: a
+# search-engine backend, an HTCondor access point, and a test-runner pod.
+#
+# To apply:
+#   kubectl apply -k manifests/adstash/
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - search/
+  - condor/
+  - runner/

@@ -1,0 +1,41 @@
+name: Adstash Tests
+on:
+  workflow_call:
+  workflow_dispatch:
+jobs:
+  test-adstash:
+    name: Run Adstash tests
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - seBackendType: elasticsearch
+            dbTag: "7.17.23"
+            runnerTag: es7py
+            sePyVersion: "elasticsearch>=7,<8"
+          - seBackendType: elasticsearch
+            dbTag: "8.19.20"
+            runnerTag: es8py
+            sePyVersion: "elasticsearch>=8,<9"
+          # elasticsearch-py 9 is known to fail against condor_adstash in the
+          # current AdStash version, so this combination is disabled.
+          # - seBackendType: elasticsearch
+          #   dbTag: "9.4.4"
+          #   runnerTag: es9py
+          #   sePyVersion: "elasticsearch>=9,<10"
+          - seBackendType: opensearch
+            dbTag: "2.19.4"
+            runnerTag: os2py
+            sePyVersion: "opensearch-py>=2,<3"
+          - seBackendType: opensearch
+            dbTag: "3.5.0"
+            runnerTag: os3py
+            sePyVersion: "opensearch-py>=3,<4"
+    uses: ./.github/workflows/test-harness.yaml
+    with:
+      testName: TestAdstash
+      testEnv: |
+        ADSTASH_SEBackendType: ${{ matrix.seBackendType }}
+        ADSTASH_DBTag: ${{ matrix.dbTag }}
+        ADSTASH_RunnerTag: ${{ matrix.runnerTag }}
+        ADSTASH_SEPyVersion: ${{ matrix.sePyVersion }}

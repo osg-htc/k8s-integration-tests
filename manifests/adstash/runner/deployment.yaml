@@ -1,0 +1,75 @@
+---
+# Test-runner pod. Runs the image built from images/adstash/Dockerfile, which
+# provides condor_adstash, the HTCondor python bindings, pytest, and the
+# elasticsearch-py/opensearch-py client libraries. The pod idles; test files
+# are copied in and executed at test time (see test-configs/adstash/).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: runner
+  labels:
+    app: runner
+    app.kubernetes.io/name: runner
+    app.kubernetes.io/part-of: adstash
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: runner
+  template:
+    metadata:
+      labels:
+        app: runner
+        app.kubernetes.io/name: runner
+        app.kubernetes.io/part-of: adstash
+    spec:
+      enableServiceLinks: false
+      # HTCondor requires its token file to be owned by the user reading it,
+      # but Kubernetes always mounts Secret volumes as root. This copies the
+      # token into a writable volume owned by submituser (uid/gid 1001).
+      initContainers:
+        - name: fix-token-ownership
+          image: condor-adstash-tests:{{ .RunnerTag }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 0
+          command: ["sh", "-c", "cp /run/secrets/adstash-pool-token/token /tokens.d/adstash.token && chown 1001:1001 /tokens.d/adstash.token && chmod 0600 /tokens.d/adstash.token"]
+          volumeMounts:
+            - name: adstash-pool-token-secret
+              mountPath: /run/secrets/adstash-pool-token
+              readOnly: true
+            - name: adstash-pool-token
+              mountPath: /tokens.d
+      containers:
+        - name: runner
+          image: condor-adstash-tests:{{ .RunnerTag }}
+          imagePullPolicy: IfNotPresent
+          command: ["sleep", "infinity"]
+          env:
+            # Tells the vendored pytest suite which single backend is deployed
+            # (see test-configs/adstash/tests/test_0{1,3}_*.py).
+            - name: SE_BACKEND
+              value: "{{ .SEBackendType }}"
+            - name: SE_VERSION
+              value: "{{ .DBTag }}"
+            - name: SE_HOST
+              value: "search:9200"
+            - name: _CONDOR_CONDOR_HOST
+              value: condor
+            - name: _CONDOR_SEC_DEFAULT_AUTHENTICATION
+              value: REQUIRED
+            - name: _CONDOR_SEC_DEFAULT_AUTHENTICATION_METHODS
+              value: IDTOKENS
+            - name: _CONDOR_SEC_DEFAULT_INTEGRITY
+              value: OPTIONAL
+            - name: _CONDOR_SEC_DEFAULT_ENCRYPTION
+              value: NEVER
+          volumeMounts:
+            - name: adstash-pool-token
+              mountPath: /home/submituser/.condor/tokens.d
+      volumes:
+        - name: adstash-pool-token-secret
+          secret:
+            secretName: adstash-pool-token
+        - name: adstash-pool-token
+          emptyDir: {}

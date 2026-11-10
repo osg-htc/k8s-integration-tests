@@ -43,8 +43,9 @@ func applyTemplate(t *testing.T, templatePath string, data any) string {
 
 // generatePoolPasswordAndIDToken creates a random pool password and uses it to generate
 // a signed HTCondor IDToken via a temporary pod. Applies the resulting password and token
-// as Kubernetes resources and returns their rendered manifests for later cleanup.
-func (th *TestHandle) generatePoolPasswordAndIDToken(trustDomain string, identity string, secretName string) IDTokenData {
+// as Kubernetes resources and returns their rendered manifests for later cleanup. authz
+// is the list of "-authz" scopes (e.g. "READ", "WRITE") the token grants.
+func (th *TestHandle) generatePoolPasswordAndIDToken(trustDomain string, identity string, secretName string, authz []string) IDTokenData {
 	// Generate a random POOL password
 	passwd := randomPoolPassword(16)
 	// Create a new K8s template based on the selected tokenOptions and Pool password
@@ -62,12 +63,12 @@ func (th *TestHandle) generatePoolPasswordAndIDToken(trustDomain string, identit
 	k8s.WaitUntilPodAvailable(th.T, th.options, podname, 6, 10*time.Second)
 
 	// Generate an IDToken on the pod using `condor_token_create`
-	token := k8s.ExecPod(th.T, th.options, podname, "",
-		"condor_token_create",
-		"-authz", "READ",
-		"-authz", "ADVERTISE_STARTD",
-		"-authz", "ADVERTISE_MASTER",
-		"-identity", identity)
+	tokenCmd := []string{"condor_token_create"}
+	for _, scope := range authz {
+		tokenCmd = append(tokenCmd, "-authz", scope)
+	}
+	tokenCmd = append(tokenCmd, "-identity", identity)
+	token := k8s.ExecPod(th.T, th.options, podname, "", tokenCmd...)
 
 	tokenManifest := applyTemplate(th.T, "../manifests/util/ospool-ep-idtokens/idtoken.yaml", map[string]string{
 		"name":  secretName,

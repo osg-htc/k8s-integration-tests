@@ -1,0 +1,31 @@
+tests:
+# Runs the condor_adstash test suite (vendored from
+# https://github.com/jasoncpatton/adstash_testing/tree/main/tests) against the
+# deployed search-engine backend and HTCondor access point. Each test file is
+# copied into the runner pod and executed directly.
+- name: Search engine connectivity
+  podSelector:
+    labels:
+      app.kubernetes.io/name: runner
+  script: tests/test_01_search_engine_connectivity.py
+  retry:
+    timeout: 120
+    wait: 120
+
+- name: HTCondor schedd connectivity
+  podSelector:
+    labels:
+      app.kubernetes.io/name: runner
+  script: tests/test_02_condor_connectivity.py
+  retry:
+    timeout: 120
+    wait: 120
+
+- name: condor_adstash push and verify
+  podSelector:
+    labels:
+      app.kubernetes.io/name: runner
+  script: tests/test_03_adstash.py
+  retry:
+    timeout: 300
+    wait: 300

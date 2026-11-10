@@ -17,11 +17,13 @@ spec:
       value: {{ .trustDomain }}
     volumeMounts:
     - name: pool-passwd
-      mountPath: /etc/condor/passwords-orig.d/
+      mountPath: /etc/condor/passwords.d/POOL
+      subPath: POOL
   volumes:
   - name: pool-passwd
     secret:
       secretName: pool-passwd
+      defaultMode: 0600
 ---
 # Pool Password for the test pool
 apiVersion: v1

@@ -1,0 +1,80 @@
+---
+# Elasticsearch deployment for the adstash test suite. DBMajorTag (the ES
+# major version, e.g. 7/8/9) selects whether xpack.profiling.enabled is set
+# (unavailable on major version 7).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: search
+  labels:
+    app: search
+    app.kubernetes.io/name: search
+    app.kubernetes.io/part-of: adstash
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: search
+  template:
+    metadata:
+      labels:
+        app: search
+        app.kubernetes.io/name: search
+        app.kubernetes.io/part-of: adstash
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: search
+          image: docker.elastic.co/elasticsearch/elasticsearch:{{ .DBTag }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 9200
+              protocol: TCP
+          env:
+            - name: discovery.type
+              value: single-node
+            - name: cluster.routing.allocation.disk.threshold_enabled
+              value: "false"
+            - name: action.destructive_requires_name
+              value: "false"
+            - name: xpack.security.enabled
+              value: "false"
+            - name: xpack.ml.enabled
+              value: "false"
+            - name: xpack.watcher.enabled
+              value: "false"
+            - name: xpack.graph.enabled
+              value: "false"
+{{- if ne .DBMajorTag "7" }}
+            - name: xpack.profiling.enabled
+              value: "false"
+{{- end }}
+            - name: stack.templates.enabled
+              value: "false"
+            - name: ingest.geoip.downloader.enabled
+              value: "false"
+            - name: cluster.deprecation_indexing.enabled
+              value: "false"
+            - name: ES_JAVA_OPTS
+              value: "-Xms512m -Xmx512m"
+          resources:
+            limits:
+              memory: 1Gi
+            requests:
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /_cluster/health
+              port: 9200
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 12
+          volumeMounts:
+            - name: search-data
+              mountPath: /usr/share/elasticsearch/data
+      volumes:
+        # RAM-backed data directory.
+        - name: search-data
+          emptyDir:
+            medium: Memory
