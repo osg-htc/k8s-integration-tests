@@ -1,7 +1,9 @@
 package test
 
 import (
+	"cmp"
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -22,6 +24,19 @@ type pelicanFormatArgs struct {
 
 var defaultPelicanFormatArgs pelicanFormatArgs = pelicanFormatArgs{
 	Tag: "v7.26.0",
+}
+
+// pelicanClientImage is the tag prefix for the alpine-based client test image
+// built by TestPelican into minikube (see images/pelican/Dockerfile).
+const pelicanClientImage = "pelican-client-tests"
+
+// pelicanOrgForTag returns the Docker organization hosting the given Pelican
+// image tag: RC tags and full release tags live in separate organizations.
+func pelicanOrgForTag(tag string) string {
+	if strings.Contains(tag, "-rc") {
+		return "pelican-ci"
+	}
+	return "pelican_platform"
 }
 
 // PelicanTestContext holds all setup components needed to run the Pelican tests, and provides a convenient way to pass them around
@@ -45,6 +60,16 @@ func setupPelicanTestSpace(t *testing.T) *PelicanTestContext {
 	options := k8s.NewKubectlOptions("", "", namespace)
 	th := TestHandle{t, options}
 
+	// Build the alpine-based client test image into minikube, copying the
+	// pelican binary out of the upstream (distroless) client image
+	th.fillTemplateStructFromEnv(&defaultPelicanFormatArgs, "PELICAN_")
+	clientTag := cmp.Or(defaultPelicanFormatArgs.ClientTag, defaultPelicanFormatArgs.Tag)
+	th.buildMinikubeImage("../images/pelican",
+		fmt.Sprintf("%v:%v", pelicanClientImage, clientTag),
+		map[string]string{
+			"PELICAN_CLIENT_IMAGE": fmt.Sprintf("hub.osg-htc.org/%v/client:%v", pelicanOrgForTag(clientTag), clientTag),
+		})
+
 	// Create a logging dir for the test output, fail fast if we can't make it
 	kustomizeDir := "../manifests/pelican"
 	logDir := th.makeLogDir(kustomizeDir)
@@ -66,16 +91,7 @@ func setupPelicanTestSpace(t *testing.T) *PelicanTestContext {
 		"admin:$2y$10$ONeUS/VGwL9CoAD6pyZ2kusUjX8z0Sxuf8kz2g4PGbFb1GKUQ9J3C")
 
 	// Template the kustomize dir
-	th.fillTemplateStructFromEnv(&defaultPelicanFormatArgs, "PELICAN_")
-	// RC tags and full release tags live in separate Docker organizations
-	funcMap := template.FuncMap{
-		"orgForTag": func(tag string) string {
-			if strings.Contains(tag, "-rc") {
-				return "pelican-ci"
-			}
-			return "pelican_platform"
-		},
-	}
+	funcMap := template.FuncMap{"orgForTag": pelicanOrgForTag}
 	formattedKustomizeDir := th.formatKustomizeDir(kustomizeDir, defaultPelicanFormatArgs, funcMap)
 	k8s.KubectlApplyFromKustomize(t, options, formattedKustomizeDir)
 
