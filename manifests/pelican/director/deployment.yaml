@@ -21,7 +21,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: director
-          image: hub.opensciencegrid.org/{{ orgForTag (.DirectorTag | default .Tag) }}/director:{{ .DirectorTag | default .Tag }}
+          image: hub.osg-htc.org/{{ orgForTag (.DirectorTag | default .Tag) }}/director:{{ .DirectorTag | default .Tag }}
           imagePullPolicy: IfNotPresent
           ports:
             - name: https

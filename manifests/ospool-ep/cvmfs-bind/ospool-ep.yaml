@@ -46,7 +46,7 @@ spec:
           value: 100%__htc/minimal:0
         - name: OSG_DEFAULT_CONTAINER_DISTRIBUTION_GPU
           value: 100%__htc/minimal:0
-        image: hub.opensciencegrid.org/osg-htc/ospool-ep:{{ .OSPoolEPTag }}
+        image: hub.osg-htc.org/osg-htc/ospool-ep:{{ .OSPoolEPTag }}
         imagePullPolicy: Always
         name: ospool-ep
         securityContext:
@@ -65,7 +65,7 @@ spec:
         - -R
         - 1000:1000
         - /pilot
-        image: hub.opensciencegrid.org/library/alpine:3
+        image: hub.osg-htc.org/library/alpine:3
         name: chown-pilot-dir
         volumeMounts:
         - mountPath: /pilot

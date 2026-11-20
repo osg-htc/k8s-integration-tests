@@ -1,6 +1,6 @@
 services:
   webapp:
-    image: hub.opensciencegrid.org/osgpreview/k8s-integration-tests-viewer:latest
+    image: hub.osg-htc.org/osgpreview/k8s-integration-tests-viewer:latest
     build:
       context: .
       dockerfile: webapp.Dockerfile
