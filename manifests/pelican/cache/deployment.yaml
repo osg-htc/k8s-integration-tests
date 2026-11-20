@@ -36,7 +36,7 @@ spec:
               mountPath: /scripts
       containers:
         - name: cache
-          image: hub.opensciencegrid.org/pelican_platform/cache:{{ .CacheTag | default .Tag }}
+          image: hub.osg-htc.org/{{ orgForTag (.CacheTag | default .Tag) }}/cache:{{ .CacheTag | default .Tag }}
           imagePullPolicy: IfNotPresent
           ports:
             - name: https

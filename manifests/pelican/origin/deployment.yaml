@@ -37,7 +37,7 @@ spec:
               mountPath: /scripts
       containers:
         - name: origin
-          image: hub.opensciencegrid.org/pelican_platform/origin:{{ .OriginTag | default .Tag }}
+          image: hub.osg-htc.org/{{ orgForTag (.OriginTag | default .Tag) }}/origin:{{ .OriginTag | default .Tag }}
           imagePullPolicy: IfNotPresent
           ports:
             - name: https

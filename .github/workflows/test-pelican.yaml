@@ -30,7 +30,7 @@ jobs:
     with:
       testName: TestPelican
       testEnv: |
-        PELICAN_ClientTag: v7.26.0-rc.0
+        PELICAN_ClientTag: ${{ matrix.clientVersion }}
         PELICAN_CacheTag: ${{ matrix.cacheVersion }}
         PELICAN_OriginTag: ${{ matrix.originVersion }}
         PELICAN_RegistryTag: ${{ matrix.registryVersion }}

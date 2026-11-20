@@ -68,7 +68,7 @@ func TestAdstash(t *testing.T) {
 	tokenData := th.generatePoolPasswordAndIDToken("condor", "submituser@condor", "adstash-pool-token",
 		[]string{"READ", "WRITE"})
 
-	formattedKustomizeDir := th.formatKustomizeDir(kustomizeDir, defaultAdstashFormatArgs)
+	formattedKustomizeDir := th.formatKustomizeDir(kustomizeDir, defaultAdstashFormatArgs, nil)
 
 	// create k8s resources for the test
 	k8s.KubectlApplyFromKustomize(t, options, formattedKustomizeDir)

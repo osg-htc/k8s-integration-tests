@@ -33,7 +33,7 @@ spec:
               mountPath: /scripts
       containers:
         - name: registry
-          image: hub.opensciencegrid.org/pelican_platform/registry:{{ .RegistryTag | default .Tag }}
+          image: hub.osg-htc.org/{{ orgForTag (.RegistryTag | default .Tag) }}/registry:{{ .RegistryTag | default .Tag }}
           imagePullPolicy: IfNotPresent
           ports:
             - name: https
