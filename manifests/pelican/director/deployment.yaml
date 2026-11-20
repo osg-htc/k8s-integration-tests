@@ -21,7 +21,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: director
-          image: hub.opensciencegrid.org/pelican_platform/director:{{ .DirectorTag | default .Tag }}
+          image: hub.opensciencegrid.org/{{ orgForTag (.DirectorTag | default .Tag) }}/director:{{ .DirectorTag | default .Tag }}
           imagePullPolicy: IfNotPresent
           ports:
             - name: https

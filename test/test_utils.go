@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"text/template"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -233,7 +234,7 @@ func (th *TestHandle) minikubeBindMount(ctx context.Context, hostDir string, des
 
 // formatKustomizeDir applies the given format struct to all go-templated yaml files in the
 // given kustomize dir into a temporary output directory
-func (th *TestHandle) formatKustomizeDir(kustomizeDir string, formatArgs any) string {
+func (th *TestHandle) formatKustomizeDir(kustomizeDir string, formatArgs any, funcMap template.FuncMap) string {
 	th.T.Helper()
 	newKustomizeDir, err := os.MkdirTemp("/tmp", "kustomize-template-*")
 	if err != nil {
@@ -249,7 +250,7 @@ func (th *TestHandle) formatKustomizeDir(kustomizeDir string, formatArgs any) st
 		}
 
 		// Template the source file based on the given formatArgs
-		formatted := applySprigTemplate(th.T, path, formatArgs)
+		formatted := applySprigTemplate(th.T, path, formatArgs, funcMap)
 		relPath, err := filepath.Rel(kustomizeDir, path)
 		if err != nil {
 			return err

@@ -176,14 +176,14 @@ func generatePelicanIssuerKeys(t *testing.T) (pelicanIssuerKeys, error) {
 // applySprigTemplate executes the Go template at templatePath with sprig functions
 // available and the given data, returning the rendered result as a string.
 // Fails the test on any error.
-func applySprigTemplate(t *testing.T, templatePath string, data any) string {
+func applySprigTemplate(t *testing.T, templatePath string, data any, funcMap template.FuncMap) string {
 	t.Helper()
 	var b strings.Builder
-	templ := template.Must(
-		template.New(filepath.Base(templatePath)).
-			Funcs(sprig.TxtFuncMap()).
-			ParseFiles(templatePath),
-	)
+	base := template.New(filepath.Base(templatePath)).Funcs(sprig.TxtFuncMap())
+	if funcMap != nil {
+		base = base.Funcs(funcMap)
+	}
+	templ := template.Must(base.ParseFiles(templatePath))
 	if err := templ.ExecuteTemplate(&b, filepath.Base(templatePath), data); err != nil {
 		t.Fatalf("Failed to template k8s manifest %s: %v", templatePath, err)
 	}
@@ -235,7 +235,7 @@ func (th *TestHandle) applyPelicanSecrets(oidcClientId, oidcClientSecret, server
 
 	var sb strings.Builder
 	for _, fname := range templateFiles {
-		rendered := applySprigTemplate(th.T, filepath.Join(templateDir, fname), data)
+		rendered := applySprigTemplate(th.T, filepath.Join(templateDir, fname), data, nil)
 		sb.WriteString(rendered)
 		sb.WriteString("\n")
 	}

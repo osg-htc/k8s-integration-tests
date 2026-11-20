@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"text/template"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
@@ -66,7 +67,16 @@ func setupPelicanTestSpace(t *testing.T) *PelicanTestContext {
 
 	// Template the kustomize dir
 	th.fillTemplateStructFromEnv(&defaultPelicanFormatArgs, "PELICAN_")
-	formattedKustomizeDir := th.formatKustomizeDir(kustomizeDir, defaultPelicanFormatArgs)
+	// RC tags and full release tags live in separate Docker organizations
+	funcMap := template.FuncMap{
+		"orgForTag": func(tag string) string {
+			if strings.Contains(tag, "-rc") {
+				return "pelican-ci"
+			}
+			return "pelican_platform"
+		},
+	}
+	formattedKustomizeDir := th.formatKustomizeDir(kustomizeDir, defaultPelicanFormatArgs, funcMap)
 	k8s.KubectlApplyFromKustomize(t, options, formattedKustomizeDir)
 
 	return &PelicanTestContext{

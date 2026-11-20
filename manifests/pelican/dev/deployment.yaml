@@ -21,7 +21,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: dev
-          image: hub.opensciencegrid.org/pelican_platform/client:{{ .ClientTag | default .Tag }}
+          image: hub.opensciencegrid.org/{{ orgForTag (.ClientTag | default .Tag) }}/client:{{ .ClientTag | default .Tag }}
           imagePullPolicy: IfNotPresent
           # Workaround to run a "sleep" command in the distroless client container.  This allows the 
           # container to stay alive and be exec'd into for running test commands
