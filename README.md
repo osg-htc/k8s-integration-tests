@@ -122,6 +122,27 @@ go test ./test -v -run TestAdstash
 
 ---
 
+## Debugging Tests
+
+By default, each test tears down its Kubernetes resources (namespace, secrets, deployments) when it finishes. To inspect the environment after a test (especially a failed one), set the `SKIP_TEST_CLEANUP` environment variable to any non-empty value:
+
+```sh
+SKIP_TEST_CLEANUP=1 go test ./test -v -run TestPelican
+```
+
+The test's `t.Cleanup` teardown is skipped, so the resources stay in the cluster. Inspect them with `kubectl`:
+
+```sh
+kubectl get namespaces
+kubectl -n <test-namespace> get pods
+kubectl -n <test-namespace> describe pod <pod>
+kubectl -n <test-namespace> logs <pod>
+kubectl -n <test-namespace> exec -it <pod> -- sh
+```
+
+Test namespaces are named `test-<suite>-<random id>` (e.g. `test-pelican-abc123`); find yours with `kubectl get namespaces`. Since cleanup is skipped, delete the leftover namespace yourself (`kubectl delete namespace <test-namespace>`) before re-running the test.
+
+---
 ## AppArmor Setup (Ubuntu 24.04+)
 
 On Ubuntu 24.04 and newer, AppArmor restricts operations (such as unprivileged user namespaces and `mount`) that the OSPool EP needs for its nested Singularity containers. The OSPool EP test therefore runs its pod under a custom AppArmor profile, `scripts/data/ospool-ep.profile` (profile name `docker-ep`), referenced from the manifests as a `Localhost` profile. A minikube node shares the host's kernel, so the profile has to be loaded on the host and then made visible to the kubelet/containerd inside the node. Two helper commands do this:

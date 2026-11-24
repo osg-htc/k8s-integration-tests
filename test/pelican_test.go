@@ -124,7 +124,7 @@ func TestPelican(t *testing.T) {
 	// --------------------------
 
 	// Cleanup runs all the reciporical functions that delete created resources
-	t.Cleanup(func() {
+	registerCleanup(t, func() {
 		cleanupPelicanTestSpace(testContext)
 	})
 

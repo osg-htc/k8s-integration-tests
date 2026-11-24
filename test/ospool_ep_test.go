@@ -72,7 +72,7 @@ func TestOSPoolEP(t *testing.T) {
 	k8s.KubectlApplyFromKustomize(t, options, formattedKustomizeDir)
 
 	// defer deleting the k8s resources created for the test
-	t.Cleanup(func() {
+	registerCleanup(t, func() {
 		th.dumpPodInformation(logDir)
 		cancelCtx()
 		k8s.DeleteNamespace(t, options, namespace)
