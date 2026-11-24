@@ -122,6 +122,22 @@ go test ./test -v -run TestAdstash
 
 ---
 
+## AppArmor Setup (Ubuntu 24.04+)
+
+On Ubuntu 24.04 and newer, AppArmor restricts operations (such as unprivileged user namespaces and `mount`) that the OSPool EP needs for its nested Singularity containers. The OSPool EP test therefore runs its pod under a custom AppArmor profile, `scripts/data/ospool-ep.profile` (profile name `docker-ep`), referenced from the manifests as a `Localhost` profile. A minikube node shares the host's kernel, so the profile has to be loaded on the host and then made visible to the kubelet/containerd inside the node. Two helper commands do this:
+
+```sh
+PROFILE=scripts/data/ospool-ep.profile
+
+# 1. Load the profile into the host kernel (requires root)
+sudo env "PATH=$PATH" go run ./scripts/cmd/loadApparmorProfile "$PROFILE"
+
+# 2. Expose AppArmor to the minikube node and restart containerd/kubelet (run as your normal user)
+go run ./scripts/cmd/minikubeApparmorPassthrough "$PROFILE"
+```
+
+Run these once after starting minikube, and again if you recreate the cluster or edit the profile. When running tests, set `OSPOOL_EP_ApparmorProfile=docker-ep` so the EP manifest applies the profile.
+
 ## Building Images Into Minikube
 
 Some test suites need a purpose-built image rather than an existing published one — e.g. `images/adstash/`'s test-runner image, which bakes in a specific `elasticsearch-py`/`opensearch-py` combo per test run. Rather than publishing such images to a registry, a test suite can build them directly into minikube's own image store as part of its Go test setup, using `minikube image build`.

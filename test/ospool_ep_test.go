@@ -14,6 +14,9 @@ type ospoolEPFormatArgs struct {
 	OSPoolEPTag string
 	CMTag       string
 	CvmfsType   string
+	// ApparmorProfile is the name of a Localhost AppArmor profile to apply to the EP
+	// container. Empty means no profile is set.
+	ApparmorProfile string
 }
 
 var defaultOSPoolEPFormatArgs = ospoolEPFormatArgs{

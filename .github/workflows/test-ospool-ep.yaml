@@ -22,3 +22,12 @@ jobs:
         OSPOOL_EP_OSPoolEPTag: ${{ matrix.ospoolEPVersion }}
         OSPOOL_EP_CMTag: ${{ matrix.cmVersion }}
         OSPOOL_EP_CvmfsType: ${{ matrix.cvmfsType }}
+        OSPOOL_EP_ApparmorProfile: docker-ep
+      # Load the EP AppArmor profile on the runner (shared kernel with minikube),
+      # then expose it to the minikube node so pods can reference it as a Localhost profile.
+      # The profile name above must match the "profile" line in ospool-ep.profile.
+      setupScript: |
+        PROFILE=scripts/data/ospool-ep.profile
+        # sudo resets PATH, so pass it through to let root find the setup-go toolchain
+        sudo env "PATH=$PATH" go run ./scripts/cmd/loadApparmorProfile "$PROFILE"
+        go run ./scripts/cmd/minikubeApparmorPassthrough "$PROFILE"
