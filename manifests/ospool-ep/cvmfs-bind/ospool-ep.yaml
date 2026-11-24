@@ -53,6 +53,11 @@ spec:
           privileged: true
           runAsGroup: 1000
           runAsUser: 1000
+{{- if .ApparmorProfile }}
+          appArmorProfile:
+            type: Localhost
+            localhostProfile: {{ .ApparmorProfile }}
+{{- end }}
         volumeMounts:
         - mountPath: /pilot
           name: scratch
