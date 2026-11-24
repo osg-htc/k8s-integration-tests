@@ -122,6 +122,28 @@ go test ./test -v -run TestAdstash
 
 ---
 
+## Debugging Tests
+
+By default, each test tears down its Kubernetes resources (namespace, secrets, deployments) when it finishes. To inspect the environment after a test (especially a failed one), set the `SKIP_TEST_CLEANUP` environment variable to any non-empty value:
+
+```sh
+SKIP_TEST_CLEANUP=1 go test ./test -v -run TestPelican
+```
+
+The test's `t.Cleanup` teardown is skipped, so the resources stay in the cluster. Inspect them with `kubectl`:
+
+```sh
+kubectl get namespaces
+kubectl -n <test-namespace> get pods
+kubectl -n <test-namespace> describe pod <pod>
+kubectl -n <test-namespace> logs <pod>
+kubectl -n <test-namespace> exec -it <pod> -- sh
+```
+
+Test namespaces are named `test-<suite>-<random id>` (e.g. `test-pelican-abc123`); find yours with `kubectl get namespaces`. Since cleanup is skipped, delete the leftover namespace yourself (`kubectl delete namespace <test-namespace>`) before re-running the test.
+
+---
+
 ## Building Images Into Minikube
 
 Some test suites need a purpose-built image rather than an existing published one — e.g. `images/adstash/`'s test-runner image, which bakes in a specific `elasticsearch-py`/`opensearch-py` combo per test run. Rather than publishing such images to a registry, a test suite can build them directly into minikube's own image store as part of its Go test setup, using `minikube image build`.

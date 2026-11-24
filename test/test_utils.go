@@ -294,3 +294,20 @@ func (th *TestHandle) fillTemplateStructFromEnv(tStruct any, namePrefix string) 
 		}
 	}
 }
+
+// skipCleanup reports whether test environment teardown should be skipped.
+// Set the SKIP_TEST_CLEANUP env var to any non-empty value to leave the test
+// environment in place for debugging.
+func skipCleanup() bool {
+	return os.Getenv("SKIP_TEST_CLEANUP") != ""
+}
+
+// registerCleanup registers fn with t.Cleanup unless SKIP_TEST_CLEANUP is set.
+func registerCleanup(t *testing.T, fn func()) {
+	t.Helper()
+	if skipCleanup() {
+		t.Log("SKIP_TEST_CLEANUP is set; skipping test environment cleanup")
+		return
+	}
+	t.Cleanup(fn)
+}
