@@ -26,5 +26,5 @@ tests:
       app: test-cm
   script: has_cvmfs.sh
   retry:
-    timeout: 300
+    timeout: 600
     wait: 30

@@ -63,7 +63,7 @@ spec:
           name: scratch
         - name: cvmfs-base
           mountPath: /cvmfs
-          mountPropagation: Bidirectional
+          mountPropagation: HostToContainer
       initContainers:
       - command:
         - chown
@@ -75,6 +75,24 @@ spec:
         volumeMounts:
         - mountPath: /pilot
           name: scratch
+      # The EP checks Singularity+CVMFS support once at startup and caches a
+      # failure, so wait until CVMFS is mounted before starting the EP.
+      - command:
+        - sh
+        - -c
+        - |
+          for i in $(seq 1 150); do
+            ls /cvmfs/singularity.opensciencegrid.org/htc/rocky:9 >/dev/null 2>&1 && exit 0
+            sleep 2
+          done
+          echo "Timed out waiting for CVMFS to be mounted" >&2
+          exit 1
+        image: hub.osg-htc.org/library/alpine:3
+        name: wait-for-cvmfs
+        volumeMounts:
+        - name: cvmfs-base
+          mountPath: /cvmfs
+          mountPropagation: HostToContainer
       volumes:
       - name: cvmfs-base
         hostPath:

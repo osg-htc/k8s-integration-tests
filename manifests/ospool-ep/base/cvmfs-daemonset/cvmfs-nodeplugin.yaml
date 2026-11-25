@@ -33,6 +33,16 @@ spec:
           value: "config-osg.opensciencegrid.org,icecube.opensciencegrid.org,oasis.opensciencegrid.org,connect.opensciencegrid.org,singularity.opensciencegrid.org,xenon.opensciencegrid.org,fermilab.opensciencegrid.org,nova.opensciencegrid.org,cms.cern.ch,cms-ib.cern.ch,atlas.cern.ch,sft.cern.ch,software.igwn.org"
         - name: SQUID_URI
           value: "http://frontier-squid:3128"
+        # Only report Ready once the repo the EP uses for its one-time
+        # Singularity/CVMFS check is actually mounted and usable. Repos are
+        # mounted sequentially, so container start does not imply mounts exist.
+        readinessProbe:
+          exec:
+            command: ["ls", "/cvmfs/singularity.opensciencegrid.org/htc/rocky:9"]
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 10
+          failureThreshold: 3
         volumeMounts:
         - mountPath: /cvmfs
           name:  cvmfs-base
